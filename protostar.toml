@@ -8,8 +8,8 @@ libs_path = "lib"
 cairo_path = ["./lib/cairo_contracts/src", "src"]
 
 ["protostar.contracts"]
-btc_header_verifier = [
-    "./src/header/btc_header_verifier.cairo",
+block_header_verifier = [
+    "./src/header/block_header_verifier.cairo",
 ]
 
 # https://github.com/Shard-Labs/starknet-devnet

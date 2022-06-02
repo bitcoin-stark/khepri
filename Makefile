@@ -1,7 +1,7 @@
 .PHONY: build test
 
 build:
-	protostar build
+	protostar build --disable-hint-validation
 
 test:
 	protostar test src

@@ -30,6 +30,10 @@ make test
 make format
 ```
 
+### 🃏 Utilities
+
+#### 
+
 ## 📄 License
 
 **khepri-starknet** is released under the [MIT](LICENSE).

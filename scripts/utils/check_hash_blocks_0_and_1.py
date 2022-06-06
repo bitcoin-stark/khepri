@@ -82,10 +82,14 @@ def header_to_cairo(block):
 
 
 if __name__ == "__main__":
+    print("Block 0 cairo header: ")
     print(header_to_cairo(block0))
+    print("Block 1 cairo header: ")
     print(header_to_cairo(block1))
 
     verifyBlock(block0)
+    print("Block 0 hash: ")
     print(block0["hash"])
     verifyBlock(block1)
+    print("Block 1 hash: ")
     print(block1["hash"])

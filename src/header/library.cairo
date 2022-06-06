@@ -153,10 +153,6 @@ namespace BlockHeaderVerifier:
         assert curr_header_hash[0] = out1
         assert curr_header_hash[1] = out2
 
-        # Verify previous block header with provided hash
-        let (prev_hash_eq) = arr_eq(prev_header_hash, 2, curr_header_hash, 2)
-        # assert prev_hash_eq = 1
-
         # TODO: Verify difficulty target
         # - Parse bits into target and convert to Uint256
 

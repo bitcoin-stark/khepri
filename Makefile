@@ -12,3 +12,6 @@ date:
 format:
 	black scripts
 	cairo-format -i src/**/*.cairo
+
+clean:
+	rm -Rf build

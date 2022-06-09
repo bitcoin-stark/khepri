@@ -4,16 +4,10 @@ from starkware.cairo.common.cairo_builtins import HashBuiltin
 from starkware.cairo.common.alloc import alloc
 
 from header.library import BlockHeader
-from header.rules.median_past_time import (
-    internal,
-    Timestamps,
-    last_11_timestamps,
-    assert_median_past_time,
-    on_block_accepted,
-)
+from header.rules.median_past_time import internal, Timestamps, last_11_timestamps, median_past_time
 
 @view
-func test_assert_median_past_time_doesnt_revert_when_timestamp_is_higher_than_median{
+func test_median_past_time_rule_doesnt_revert_when_timestamp_is_higher_than_median{
     syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
 }():
     # median of timestamps is 8
@@ -24,13 +18,13 @@ func test_assert_median_past_time_doesnt_revert_when_timestamp_is_higher_than_me
         version=2, previous=new (), merkle_root=new (), time=9, bits=10, nonce=10, data=new ()
         )
 
-    assert_median_past_time(header)
+    median_past_time.assert_rule(header)
 
     return ()
 end
 
 @view
-func test_assert_median_past_time_reverts_when_timestamp_is_lower_than_median{
+func test_median_past_time_rule_reverts_when_timestamp_is_lower_than_median{
     syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
 }():
     # median of timestamps is 8
@@ -42,13 +36,13 @@ func test_assert_median_past_time_reverts_when_timestamp_is_lower_than_median{
         )
 
     %{ expect_revert(error_message="[rule] Median Past Time: block timestamp (7) must be higher than the median (8) of the previous 11 block timestamps") %}
-    assert_median_past_time(header)
+    median_past_time.assert_rule(header)
 
     return ()
 end
 
 @view
-func test_assert_median_past_time_reverts_when_timestamp_equals_median{
+func test_median_past_time_rule_reverts_when_timestamp_equals_median{
     syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr
 }():
     # median of timestamps is 8
@@ -60,7 +54,7 @@ func test_assert_median_past_time_reverts_when_timestamp_equals_median{
         )
 
     %{ expect_revert(error_message="[rule] Median Past Time: block timestamp (8) must be higher than the median (8) of the previous 11 block timestamps") %}
-    assert_median_past_time(header)
+    median_past_time.assert_rule(header)
 
     return ()
 end
@@ -75,7 +69,7 @@ func test_on_block_accepted{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, ra
         version=2, previous=new (), merkle_root=new (), time=9, bits=10, nonce=10, data=new ()
         )
 
-    on_block_accepted(header)
+    median_past_time.on_block_accepted(header)
 
     let (timestamps : Timestamps) = last_11_timestamps.read()
     assert timestamps = Timestamps(16, 8, 0, 3, 3, 7, 20, 0, 4, 10, 9)

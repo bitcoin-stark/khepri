@@ -41,43 +41,48 @@ func last_11_timestamps() -> (timestamps : Timestamps):
 end
 
 # ------
-# RULE
+# RULE: Median Past Time
+# Description: A timestamp is accepted as valid if it is greater than the median timestamp of previous 11 blocks
+# Ref: https://en.bitcoin.it/wiki/Block_timestamp, https://en.bitcoin.it/wiki/BIP_0113
 # ------
-func assert_median_past_time{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
-    header : BlockHeader
-):
-    alloc_locals
-    let (timestamps : Timestamps) = last_11_timestamps.read()
-    let (local timestamp_median) = internal.compute_timestamps_median(timestamps)
-    local block_timestamp = header.time
+namespace median_past_time:
+    # This function reverts if the timestamp of the given header if lower than or equal to the median timestamp of previous 11 blocks
+    func assert_rule{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
+        header : BlockHeader
+    ):
+        alloc_locals
+        let (timestamps : Timestamps) = last_11_timestamps.read()
+        let (local timestamp_median) = internal.compute_timestamps_median(timestamps)
+        local block_timestamp = header.time
 
-    with_attr error_message(
-            "[rule] Median Past Time: block timestamp ({block_timestamp}) must be higher than the median ({timestamp_median}) of the previous 11 block timestamps"):
-        assert_lt(timestamp_median, block_timestamp)
+        with_attr error_message(
+                "[rule] Median Past Time: block timestamp ({block_timestamp}) must be higher than the median ({timestamp_median}) of the previous 11 block timestamps"):
+            assert_lt(timestamp_median, block_timestamp)
+        end
+        return ()
     end
-    return ()
-end
 
-# This function must be called when a block is accepted so that the list of the last 11 timestamps is updated
-func on_block_accepted{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
-    header : BlockHeader
-):
-    let (timestamps : Timestamps) = last_11_timestamps.read()
-    let new_timestamps : Timestamps = Timestamps(
-        timestamps.t2,
-        timestamps.t3,
-        timestamps.t4,
-        timestamps.t5,
-        timestamps.t6,
-        timestamps.t7,
-        timestamps.t8,
-        timestamps.t9,
-        timestamps.t10,
-        timestamps.t11,
-        header.time,
-    )
-    last_11_timestamps.write(new_timestamps)
-    return ()
+    # This function must be called when a block is accepted so that the list of the last 11 timestamps is updated
+    func on_block_accepted{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
+        header : BlockHeader
+    ):
+        let (timestamps : Timestamps) = last_11_timestamps.read()
+        let new_timestamps : Timestamps = Timestamps(
+            timestamps.t2,
+            timestamps.t3,
+            timestamps.t4,
+            timestamps.t5,
+            timestamps.t6,
+            timestamps.t7,
+            timestamps.t8,
+            timestamps.t9,
+            timestamps.t10,
+            timestamps.t11,
+            header.time,
+        )
+        last_11_timestamps.write(new_timestamps)
+        return ()
+    end
 end
 
 # ------
@@ -104,6 +109,8 @@ namespace internal:
         return (median_value=sorted_timestamp_array[TIMESTAMP_MEDIAN_INDEX])
     end
 
+    # Implement a naive sort algorithm for an array of felts without using any hint.
+    # Complexity is O(n^2) but this is not a problem as it is used to sort an array of only 11 elements.
     func sort_unsigned{range_check_ptr}(arr_len : felt, arr : felt*) -> (sorted_array : felt*):
         alloc_locals
 

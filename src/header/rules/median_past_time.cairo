@@ -53,7 +53,7 @@ namespace median_past_time:
         alloc_locals
         let (timestamps : Timestamps) = last_11_timestamps.read()
         let (local timestamp_median) = internal.compute_timestamps_median(timestamps)
-        local block_timestamp = header.time
+        local block_timestamp = header.timestamp
 
         with_attr error_message(
                 "[rule] Median Past Time: block timestamp ({block_timestamp}) must be higher than the median ({timestamp_median}) of the previous 11 block timestamps"):
@@ -78,7 +78,7 @@ namespace median_past_time:
             timestamps.t9,
             timestamps.t10,
             timestamps.t11,
-            header.time,
+            header.timestamp,
         )
         last_11_timestamps.write(new_timestamps)
         return ()

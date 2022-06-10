@@ -2,7 +2,7 @@
 
 from starkware.cairo.common.cairo_builtins import HashBuiltin
 from starkware.cairo.common.alloc import alloc
-
+from starkware.cairo.common.uint256 import Uint256
 from header.library import BlockHeader
 from header.rules.median_past_time import internal, Timestamps, last_11_timestamps, median_past_time
 
@@ -15,7 +15,7 @@ func test_median_past_time_rule_doesnt_revert_when_timestamp_is_higher_than_medi
     last_11_timestamps.write(timestamps)
 
     tempvar header : BlockHeader = BlockHeader(
-        version=2, previous=new (), merkle_root=new (), time=9, bits=10, nonce=10, data=new ()
+        version=2, previous=Uint256(0, 0), merkle_root=Uint256(0, 0), time=9, bits=10, nonce=10, hash=Uint256(0, 0)
         )
 
     median_past_time.assert_rule(header)
@@ -32,7 +32,7 @@ func test_median_past_time_rule_reverts_when_timestamp_is_lower_than_median{
     last_11_timestamps.write(timestamps)
 
     tempvar header : BlockHeader = BlockHeader(
-        version=2, previous=new (), merkle_root=new (), time=7, bits=10, nonce=10, data=new ()
+        version=2, previous=Uint256(0, 0), merkle_root=Uint256(0, 0), time=7, bits=10, nonce=10, hash=Uint256(0, 0)
         )
 
     %{ expect_revert(error_message="[rule] Median Past Time: block timestamp (7) must be higher than the median (8) of the previous 11 block timestamps") %}
@@ -50,7 +50,7 @@ func test_median_past_time_rule_reverts_when_timestamp_equals_median{
     last_11_timestamps.write(timestamps)
 
     tempvar header : BlockHeader = BlockHeader(
-        version=2, previous=new (), merkle_root=new (), time=8, bits=10, nonce=10, data=new ()
+        version=2, previous=Uint256(0, 0), merkle_root=Uint256(0, 0), time=8, bits=10, nonce=10, hash=Uint256(0, 0)
         )
 
     %{ expect_revert(error_message="[rule] Median Past Time: block timestamp (8) must be higher than the median (8) of the previous 11 block timestamps") %}
@@ -66,7 +66,7 @@ func test_on_block_accepted{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, ra
     last_11_timestamps.write(timestamps)
 
     tempvar header : BlockHeader = BlockHeader(
-        version=2, previous=new (), merkle_root=new (), time=9, bits=10, nonce=10, data=new ()
+        version=2, previous=Uint256(0, 0), merkle_root=Uint256(0, 0), time=9, bits=10, nonce=10, hash=Uint256(0, 0)
         )
 
     median_past_time.on_block_accepted(header)

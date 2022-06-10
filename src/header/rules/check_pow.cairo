@@ -5,13 +5,9 @@
 from starkware.cairo.common.cairo_builtins import HashBuiltin, BitwiseBuiltin
 from starkware.cairo.common.bool import TRUE, FALSE
 from starkware.cairo.common.uint256 import Uint256, uint256_lt
-from starkware.cairo.common.math import split_felt, unsigned_div_rem
-from starkware.cairo.common.pow import pow
-
-from utils.sha256.sha256_contract import compute_sha256
-from utils.common import swap_endianness_64
 
 from header.library import BlockHeader
+from utils.target import decode_target
 
 # ------
 # CONSTANTS
@@ -36,7 +32,7 @@ namespace check_pow:
         alloc_locals
 
         let header_hash = header.hash
-        let (target) = internal.get_target(header.bits)
+        let (target) = decode_target(header.bits)
         let (res) = uint256_lt(header_hash, target)
 
         local target_hi = target.high
@@ -54,19 +50,5 @@ namespace check_pow:
         header : BlockHeader
     ):
         return ()
-    end
-end
-
-# ------
-# INTERNAL
-# ------
-namespace internal:
-    func get_target{range_check_ptr}(bits : felt) -> (res : Uint256):
-        alloc_locals
-        let (exponent, local mantissa) = unsigned_div_rem(bits, 2 ** 24)
-        let (exp) = pow(256, exponent - 3)
-        let tmp = mantissa * exp
-        let res_target = split_felt(tmp)
-        return (Uint256(res_target.low, res_target.high))
     end
 end

@@ -9,9 +9,8 @@ from starkware.cairo.common.uint256 import Uint256, uint256_lt
 # Open Zeppelin dependencies
 from openzeppelin.access.ownable import Ownable
 
-from utils.common import swap_endianness_64, get_target, prepare_hash
+from utils.common import swap_endianness_64
 from utils.sha256.sha256_contract import compute_sha256
-from utils.array import arr_eq
 
 struct BlockHeader:
     member version : felt  # 4 bytes

@@ -15,9 +15,9 @@ from utils.array import arr_eq
 
 struct BlockHeader:
     member version : felt  # 4 bytes
-    member previous : Uint256  # 32 bytes
+    member prev_block : Uint256  # 32 bytes
     member merkle_root : Uint256  # 32 bytes
-    member time : felt  # 4 bytes
+    member timestamp : felt  # 4 bytes
     member bits : felt  # 4 bytes
     member nonce : felt  # 4 bytes
     member hash : Uint256  # 32 bytes
@@ -109,7 +109,7 @@ namespace BlockHeaderVerifier:
         let (prev2) = swap_endianness_64(data[3] * 2 ** 32 + data[4], 8)
         let (prev3) = swap_endianness_64(data[1] * 2 ** 32 + data[2], 8)
 
-        local previous : Uint256 = Uint256(
+        local prev_block : Uint256 = Uint256(
             prev3 + prev2 * 2 ** 64,
             prev1 + prev0 * 2 ** 64,
             )
@@ -123,7 +123,7 @@ namespace BlockHeaderVerifier:
             merkle3 + merkle2 * 2 ** 64,
             merkle1 + merkle0 * 2 ** 64,
             )
-        let (time) = swap_endianness_64(data[17], 4)
+        let (timestamp) = swap_endianness_64(data[17], 4)
         let (bits) = swap_endianness_64(data[18], 4)
         let (nonce) = swap_endianness_64(data[19], 4)
 
@@ -145,7 +145,7 @@ namespace BlockHeaderVerifier:
             out2
             )
 
-        local header : BlockHeader = BlockHeader(version, previous, merkle_root, time, bits, nonce, header_hash)
+        local header : BlockHeader = BlockHeader(version, prev_block, merkle_root, timestamp, bits, nonce, header_hash)
         return (header)
     end
 

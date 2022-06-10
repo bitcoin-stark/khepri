@@ -5,6 +5,7 @@
 # Starkware dependencies
 from starkware.cairo.common.cairo_builtins import HashBuiltin, BitwiseBuiltin
 from starkware.cairo.common.alloc import alloc
+from starkware.cairo.common.math import assert_not_zero
 from starkware.cairo.common.uint256 import Uint256, uint256_lt
 # Open Zeppelin dependencies
 from openzeppelin.access.ownable import Ownable
@@ -20,6 +21,11 @@ struct BlockHeader:
     member bits : felt  # 4 bytes
     member nonce : felt  # 4 bytes
     member hash : Uint256  # 32 bytes
+end
+
+func assert_block_header{range_check_ptr}(block_header : BlockHeader):
+    assert_not_zero(block_header.version)
+    return ()
 end
 
 # ------

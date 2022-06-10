@@ -85,26 +85,10 @@ namespace BlockHeaderVerifier:
 
         # Retrieve previous block header hash (or zero hash if genesis)
         let (local prev_hash : felt*) = alloc()
-        if height == 0:
-            assert prev_hash[0] = 0
-            assert prev_hash[1] = 0
-            tempvar syscall_ptr = syscall_ptr
-            tempvar range_check_ptr = range_check_ptr
-            tempvar pedersen_ptr = pedersen_ptr
-        else:
-            let (block_header_hash) = block_header_hash_.read(height - 1)
-            assert prev_hash[0] = block_header_hash.low
-            assert prev_hash[1] = block_header_hash.high
-            tempvar syscall_ptr = syscall_ptr
-            tempvar range_check_ptr = range_check_ptr
-            tempvar pedersen_ptr = pedersen_ptr
-        end
-        tempvar syscall_ptr = syscall_ptr
-        tempvar range_check_ptr = range_check_ptr
-        tempvar pedersen_ptr = pedersen_ptr
+        let (prev_block_header_hash) = block_header_hash_.read(height - 1)
         # Verify provided block header
         let (local header) = prepare_header(data)
-        process_header(header, prev_hash)
+        process_header(header, prev_block_header_hash)
 
         local syscall_ptr : felt* = syscall_ptr
         # Write current header to storage
@@ -166,7 +150,7 @@ namespace BlockHeaderVerifier:
     end
 
     func process_header{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
-        header : BlockHeader, prev_header_hash : felt*
+        header : BlockHeader, prev_header_hash : Uint256
     ):
         # TODO: invoke consensus rules checks
         return ()

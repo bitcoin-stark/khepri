@@ -17,15 +17,7 @@ func compute_sha256{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
 
     let (local output : felt*) = sha256{sha256_ptr=sha256_ptr}(input, n_bytes)
     # TODO: make finalize work
-    #finalize_sha256(sha256_ptr_start=sha256_ptr_start, sha256_ptr_end=sha256_ptr)
+    # finalize_sha256(sha256_ptr_start=sha256_ptr_start, sha256_ptr_end=sha256_ptr)
 
-    return (
-        output[3] + 2 ** 32 * output[2] + 2 ** 64 * output[1] + 2 ** 96 * output[0],
-        output[7] + 2 ** 32 * output[6] + 2 ** 64 * output[5] + 2 ** 96 * output[4],
-    )
-end
-
-struct IntArray32:
-    member elements : felt*
-    member byte_len : felt  # total number of bytes
+    return (output)
 end

@@ -9,9 +9,8 @@ from starkware.cairo.common.uint256 import Uint256, uint256_lt
 # Open Zeppelin dependencies
 from openzeppelin.access.ownable import Ownable
 
-from utils.common import swap_endianness_64, get_target, prepare_hash
+from utils.common import swap_endianness_64
 from utils.sha256.sha256_contract import compute_sha256
-from utils.array import arr_eq
 
 struct BlockHeader:
     member version : felt  # 4 bytes
@@ -127,22 +126,19 @@ namespace BlockHeaderVerifier:
         let (bits) = swap_endianness_64(data[18], 4)
         let (nonce) = swap_endianness_64(data[19], 4)
 
-        # WIP: Compute SHA256 of serialized header (big endian)
-        let (tmp1, tmp2) = compute_sha256(data, 80)
-        let (spliced_tmp) = prepare_hash(Uint256(tmp1, tmp2))
-        let (tmpout1, tmpout2) = compute_sha256(spliced_tmp, 32)  # Second hash
-        # TODO Cairo way to do endianness
-        local out1
-        local out2
-        %{
-            data = f'{ids.tmpout1:032x}{ids.tmpout2:032x}'
-            data = "".join(data[::-1])
-            ids.out2 = int(data[:32], 16)
-            ids.out1 = int(data[32:], 16)
-        %}
+        let (single_sha) = compute_sha256(header.data, 80)
+        let (double_sha) = compute_sha256(single_sha, 32)
+
+        # %{ print('block hash:', ''.join([f'{memory[ids.double_sha + i]:08x}' for i in range(8)])) %}
+
+        let (hash0) = swap_endianness_64(double_sha[6] * 2 ** 32 + double_sha[7], 8)
+        let (hash1) = swap_endianness_64(double_sha[4] * 2 ** 32 + double_sha[5], 8)
+        let (hash2) = swap_endianness_64(double_sha[2] * 2 ** 32 + double_sha[3], 8)
+        let (hash3) = swap_endianness_64(double_sha[0] * 2 ** 32 + double_sha[1], 8)
+
         local header_hash : Uint256 = Uint256(
-            out1,
-            out2
+            hash3 + hash2 * 2 ** 64,
+            hash1 + hash0 * 2 ** 64,
             )
 
         local header : BlockHeader = BlockHeader(version, prev_block, merkle_root, timestamp, bits, nonce, header_hash)

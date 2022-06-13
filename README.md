@@ -1,6 +1,9 @@
 # khepri-starknet
 Khepri StarkNet smart contracts
 
+## Description
+
+
 ## Usage
 
 > ## ⚠️ WARNING! ⚠️
@@ -11,6 +14,8 @@ Khepri StarkNet smart contracts
 ### Set up the project
 
 #### 📦 Install the requirements
+
+- [protostar 0.2.3 or above](https://docs.swmansion.com/protostar/docs/tutorials/installation)
 
 ### ⛏️ Compile
 
@@ -40,11 +45,4 @@ make format
 
 ## Credits
 
-This code is based on the work done on https://github.com/samlaf/starknet-btc-lightclient.
-
-Shout out to the original contributors:
-- https://github.com/maxgillett
-- https://github.com/samlaf
-- https://github.com/tekkac
-
-And shout out to [Louis Guthmann](https://twitter.com/GuthL) for the original idea.
+This project was inspired by the work done on https://github.com/samlaf/starknet-btc-lightclient.

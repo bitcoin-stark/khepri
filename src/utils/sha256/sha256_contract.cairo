@@ -9,7 +9,7 @@ from starkware.cairo.common.cairo_builtins import BitwiseBuiltin
 # Returns the 256 output bits as 2 128-bit big-endian integers.
 func compute_sha256{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
     input : felt*, n_bytes : felt
-) -> (res0 : felt, res1 : felt):
+) -> (output : felt*):
     alloc_locals
 
     let (local sha256_ptr_start : felt*) = alloc()

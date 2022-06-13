@@ -8,7 +8,7 @@ from starkware.cairo.common.math import assert_lt
 from starkware.cairo.common.math_cmp import is_le
 from starkware.cairo.common.bool import TRUE, FALSE
 
-from header.library import BlockHeader
+from header.model import BlockHeader
 
 # ------
 # CONSTANTS

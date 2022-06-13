@@ -8,7 +8,7 @@ from starkware.cairo.common.math import assert_lt
 from starkware.cairo.common.math_cmp import is_le
 from starkware.cairo.common.bool import TRUE, FALSE
 
-from header.model import BlockHeader
+from header.model import BlockHeader, BlockHeaderValidationContext
 
 # ------
 # CONSTANTS
@@ -48,12 +48,12 @@ end
 namespace median_past_time:
     # This function reverts if the timestamp of the given header if lower than or equal to the median timestamp of previous 11 blocks
     func assert_rule{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
-        header : BlockHeader
+       ctx : BlockHeaderValidationContext
     ):
         alloc_locals
         let (timestamps : Timestamps) = last_11_timestamps.read()
         let (local timestamp_median) = internal.compute_timestamps_median(timestamps)
-        local block_timestamp = header.timestamp
+        local block_timestamp = ctx.block_header.timestamp
 
         with_attr error_message(
                 "[rule] Median Past Time: block timestamp ({block_timestamp}) must be higher than the median ({timestamp_median}) of the previous 11 block timestamps"):
@@ -64,7 +64,7 @@ namespace median_past_time:
 
     # This function must be called when a block is accepted so that the list of the last 11 timestamps is updated
     func on_block_accepted{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
-        header : BlockHeader
+       ctx : BlockHeaderValidationContext
     ):
         let (timestamps : Timestamps) = last_11_timestamps.read()
         let new_timestamps : Timestamps = Timestamps(
@@ -78,7 +78,7 @@ namespace median_past_time:
             timestamps.t9,
             timestamps.t10,
             timestamps.t11,
-            header.timestamp,
+            ctx.block_header.timestamp,
         )
         last_11_timestamps.write(new_timestamps)
         return ()

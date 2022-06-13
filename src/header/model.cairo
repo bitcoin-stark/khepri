@@ -15,3 +15,9 @@ struct BlockHeader:
     member nonce : felt  # 4 bytes
     member hash : Uint256  # 32 bytes
 end
+
+struct BlockHeaderValidationContext:
+    member height : felt
+    member block_header : BlockHeader
+    member previous_block_header : BlockHeader
+end

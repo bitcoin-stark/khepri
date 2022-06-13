@@ -6,7 +6,7 @@ from starkware.cairo.common.cairo_builtins import HashBuiltin, BitwiseBuiltin
 from starkware.cairo.common.bool import TRUE, FALSE
 from starkware.cairo.common.uint256 import Uint256, uint256_lt
 
-from header.model import BlockHeader
+from header.model import BlockHeader, BlockHeaderValidationContext
 from utils.target import decode_target
 
 # ------
@@ -28,11 +28,11 @@ namespace check_pow:
         pedersen_ptr : HashBuiltin*,
         range_check_ptr,
         bitwise_ptr : BitwiseBuiltin*,
-    }(header : BlockHeader):
+    }(ctx : BlockHeaderValidationContext):
         alloc_locals
 
-        let header_hash = header.hash
-        let (target) = decode_target(header.bits)
+        let header_hash = ctx.block_header.hash
+        let (target) = decode_target(ctx.block_header.bits)
         let (res) = uint256_lt(header_hash, target)
 
         local target_hi = target.high
@@ -47,7 +47,7 @@ namespace check_pow:
     end
 
     func on_block_accepted{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
-        header : BlockHeader
+        ctx : BlockHeaderValidationContext
     ):
         return ()
     end

@@ -6,8 +6,6 @@
 from starkware.cairo.common.cairo_builtins import HashBuiltin, BitwiseBuiltin
 from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.uint256 import Uint256, uint256_lt
-# Open Zeppelin dependencies
-from openzeppelin.access.ownable import Ownable
 
 from utils.common import swap_endianness_64
 from utils.sha256.sha256_contract import compute_sha256
@@ -57,10 +55,7 @@ namespace BlockHeaderVerifier:
     # CONSTRUCTOR
     # ------
 
-    func constructor{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
-        owner : felt
-    ):
-        Ownable.initializer(owner)
+    func constructor{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}():
         return ()
     end
 

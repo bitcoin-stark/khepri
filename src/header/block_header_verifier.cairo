@@ -14,8 +14,8 @@ from header.library import BlockHeaderVerifier
 # ------
 
 @constructor
-func constructor{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(owner : felt):
-    return BlockHeaderVerifier.constructor(owner)
+func constructor{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}():
+    return BlockHeaderVerifier.constructor()
 end
 
 # -----

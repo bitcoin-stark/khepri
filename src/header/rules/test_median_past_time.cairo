@@ -3,8 +3,9 @@
 from starkware.cairo.common.cairo_builtins import HashBuiltin
 from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.uint256 import Uint256
-from header.library import BlockHeader
+from header.model import BlockHeader, BlockHeaderValidationContext
 from header.rules.median_past_time import internal, Timestamps, last_11_timestamps, median_past_time
+from header.test_utils import test_utils
 
 @view
 func test_median_past_time_rule_doesnt_revert_when_timestamp_is_higher_than_median{
@@ -18,7 +19,8 @@ func test_median_past_time_rule_doesnt_revert_when_timestamp_is_higher_than_medi
         version=2, prev_block=Uint256(0, 0), merkle_root=Uint256(0, 0), timestamp=9, bits=10, nonce=10, hash=Uint256(0, 0)
         )
 
-    median_past_time.assert_rule(header)
+    let (ctx) = test_utils.mock_ctx(header)
+    median_past_time.assert_rule(ctx)
 
     return ()
 end
@@ -36,7 +38,8 @@ func test_median_past_time_rule_reverts_when_timestamp_is_lower_than_median{
         )
 
     %{ expect_revert(error_message="[rule] Median Past Time: block timestamp (7) must be higher than the median (8) of the previous 11 block timestamps") %}
-    median_past_time.assert_rule(header)
+    let (ctx) = test_utils.mock_ctx(header)
+    median_past_time.assert_rule(ctx)
 
     return ()
 end
@@ -54,7 +57,8 @@ func test_median_past_time_rule_reverts_when_timestamp_equals_median{
         )
 
     %{ expect_revert(error_message="[rule] Median Past Time: block timestamp (8) must be higher than the median (8) of the previous 11 block timestamps") %}
-    median_past_time.assert_rule(header)
+    let (ctx) = test_utils.mock_ctx(header)
+    median_past_time.assert_rule(ctx)
 
     return ()
 end
@@ -69,7 +73,8 @@ func test_on_block_accepted{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, ra
         version=2, prev_block=Uint256(0, 0), merkle_root=Uint256(0, 0), timestamp=9, bits=10, nonce=10, hash=Uint256(0, 0)
         )
 
-    median_past_time.on_block_accepted(header)
+    let (ctx) = test_utils.mock_ctx(header)
+    median_past_time.on_block_accepted(ctx)
 
     let (timestamps : Timestamps) = last_11_timestamps.read()
     assert timestamps = Timestamps(16, 8, 0, 3, 3, 7, 20, 0, 4, 10, 9)
@@ -129,3 +134,4 @@ func test_sort_unsigned_with_equal_values{range_check_ptr}():
 
     return ()
 end
+

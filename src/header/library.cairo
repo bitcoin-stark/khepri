@@ -11,9 +11,10 @@ from openzeppelin.access.ownable import Ownable
 
 from utils.common import swap_endianness_64
 from utils.sha256.sha256_contract import compute_sha256
-from header.model import BlockHeader
+from header.model import BlockHeader, BlockHeaderValidationContext
 from header.rules.median_past_time import median_past_time
 from header.rules.check_pow import check_pow
+from header.rules.previous_block_hash import previous_block_hash
 
 # ------
 # STORAGE
@@ -75,17 +76,12 @@ namespace BlockHeaderVerifier:
     }(height : felt, data_len : felt, data : felt*):
         alloc_locals
 
-        # Retrieve previous block header hash (or zero hash if genesis)
-        let (local prev_hash : felt*) = alloc()
-        let (prev_block_header_hash) = block_header_hash_.read(height - 1)
         # Verify provided block header
         let (local header) = prepare_header(data)
-        process_header(header, prev_block_header_hash)
+        let (previous_block_header) = block_header_by_height(height - 1)
+        let ctx = BlockHeaderValidationContext(height, header, previous_block_header)
+        process_header(ctx)
 
-        local syscall_ptr : felt* = syscall_ptr
-        # Write current header to storage
-        block_header_hash_.write(height, header.hash)
-        block_header_.write(header.hash, header)
         return ()
     end
 
@@ -143,18 +139,21 @@ namespace BlockHeaderVerifier:
         pedersen_ptr : HashBuiltin*,
         range_check_ptr,
         bitwise_ptr : BitwiseBuiltin*,
-    }(header : BlockHeader, prev_header_hash : Uint256):
+    }(ctx : BlockHeaderValidationContext):
         alloc_locals
         # Invoke consensus rules checks
 
+        # RULE: Previous Block Hash
+        previous_block_hash.assert_rule(ctx)
+
         # RULE: Proof Of Work
-        check_pow.assert_rule(header)
+        check_pow.assert_rule(ctx)
 
         # RULE: Median Past Time
-        median_past_time.assert_rule(header)
+        median_past_time.assert_rule(ctx)
 
         # Accept block
-        accept_block(header)
+        accept_block(ctx)
 
         return ()
     end
@@ -164,9 +163,16 @@ namespace BlockHeaderVerifier:
         pedersen_ptr : HashBuiltin*,
         range_check_ptr,
         bitwise_ptr : BitwiseBuiltin*,
-    }(header : BlockHeader):
-        check_pow.on_block_accepted(header)
-        median_past_time.on_block_accepted(header)
+    }(ctx : BlockHeaderValidationContext):
+        alloc_locals
+        # Write current header to storage
+        block_header_hash_.write(ctx.height, ctx.block_header.hash)
+        block_header_.write(ctx.block_header.hash, ctx.block_header)
+
+        # Consensus rules callback
+        previous_block_hash.on_block_accepted(ctx)
+        check_pow.on_block_accepted(ctx)
+        median_past_time.on_block_accepted(ctx)
         return ()
     end
 end

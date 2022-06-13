@@ -6,7 +6,8 @@
 from starkware.cairo.common.cairo_builtins import HashBuiltin, BitwiseBuiltin
 from starkware.cairo.common.uint256 import Uint256
 
-from header.library import BlockHeaderVerifier, BlockHeader
+from header.model import BlockHeader
+from header.library import BlockHeaderVerifier
 
 # ------
 # CONSTRUCTOR

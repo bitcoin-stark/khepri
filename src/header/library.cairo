@@ -11,16 +11,9 @@ from openzeppelin.access.ownable import Ownable
 
 from utils.common import swap_endianness_64
 from utils.sha256.sha256_contract import compute_sha256
-
-struct BlockHeader:
-    member version : felt  # 4 bytes
-    member prev_block : Uint256  # 32 bytes
-    member merkle_root : Uint256  # 32 bytes
-    member timestamp : felt  # 4 bytes
-    member bits : felt  # 4 bytes
-    member nonce : felt  # 4 bytes
-    member hash : Uint256  # 32 bytes
-end
+from header.model import BlockHeader
+from header.rules.median_past_time import median_past_time
+from header.rules.check_pow import check_pow
 
 # ------
 # STORAGE
@@ -126,7 +119,7 @@ namespace BlockHeaderVerifier:
         let (bits) = swap_endianness_64(data[18], 4)
         let (nonce) = swap_endianness_64(data[19], 4)
 
-        let (single_sha) = compute_sha256(header.data, 80)
+        let (single_sha) = compute_sha256(data, 80)
         let (double_sha) = compute_sha256(single_sha, 32)
 
         # %{ print('block hash:', ''.join([f'{memory[ids.double_sha + i]:08x}' for i in range(8)])) %}
@@ -145,10 +138,35 @@ namespace BlockHeaderVerifier:
         return (header)
     end
 
-    func process_header{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(
-        header : BlockHeader, prev_header_hash : Uint256
-    ):
-        # TODO: invoke consensus rules checks
+    func process_header{
+        syscall_ptr : felt*,
+        pedersen_ptr : HashBuiltin*,
+        range_check_ptr,
+        bitwise_ptr : BitwiseBuiltin*,
+    }(header : BlockHeader, prev_header_hash : Uint256):
+        alloc_locals
+        # Invoke consensus rules checks
+
+        # RULE: Proof Of Work
+        check_pow.assert_rule(header)
+
+        # RULE: Median Past Time
+        median_past_time.assert_rule(header)
+
+        # Accept block
+        accept_block(header)
+
+        return ()
+    end
+
+    func accept_block{
+        syscall_ptr : felt*,
+        pedersen_ptr : HashBuiltin*,
+        range_check_ptr,
+        bitwise_ptr : BitwiseBuiltin*,
+    }(header : BlockHeader):
+        check_pow.on_block_accepted(header)
+        median_past_time.on_block_accepted(header)
         return ()
     end
 end

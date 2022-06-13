@@ -6,7 +6,7 @@ from starkware.cairo.common.cairo_builtins import HashBuiltin, BitwiseBuiltin
 from starkware.cairo.common.bool import TRUE, FALSE
 from starkware.cairo.common.uint256 import Uint256, uint256_lt
 
-from header.library import BlockHeader
+from header.model import BlockHeader
 from utils.target import decode_target
 
 # ------

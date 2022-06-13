@@ -5,6 +5,7 @@
 
 from starkware.cairo.common.cairo_builtins import HashBuiltin
 from starkware.cairo.common.uint256 import Uint256, uint256_eq
+from starkware.cairo.common.bool import TRUE
 
 from header.model import BlockHeader, BlockHeaderValidationContext
 
@@ -19,9 +20,9 @@ namespace previous_block_hash:
     ):
         alloc_locals
         let prev_block_header_hash = ctx.previous_block_header.hash
-
+        
         with_attr error_message("[rule] Previous Block Hash: previous block header hash reference is invalid"):
-            uint256_eq(ctx.block_header.prev_block, prev_block_header_hash)
+            internal.assert_hash_equal(ctx.block_header.prev_block, prev_block_header_hash)
         end
         return ()
     end
@@ -37,5 +38,11 @@ end
 # INTERNAL
 # ------
 namespace internal:
-    
+    func assert_hash_equal{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
+        hash_1: Uint256, hash_2: Uint256
+    ):
+        let (is_eq) = uint256_eq(hash_1, hash_2)
+        assert is_eq = TRUE
+        return ()
+    end
 end

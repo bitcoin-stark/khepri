@@ -6,6 +6,7 @@
 from starkware.cairo.common.cairo_builtins import HashBuiltin, BitwiseBuiltin
 from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.uint256 import Uint256, uint256_lt
+from starkware.cairo.common.bool import TRUE, FALSE
 
 from utils.common import swap_endianness_64
 from utils.sha256.sha256_contract import compute_sha256
@@ -136,6 +137,11 @@ namespace BlockHeaderVerifier:
         bitwise_ptr : BitwiseBuiltin*,
     }(ctx : BlockHeaderValidationContext):
         alloc_locals
+        let (should_skip) = should_skip_checks(ctx)
+        if should_skip == TRUE:
+            return ()
+        end
+
         # Invoke consensus rules checks
 
         # RULE: Previous Block Hash
@@ -151,6 +157,20 @@ namespace BlockHeaderVerifier:
         accept_block(ctx)
 
         return ()
+    end
+
+    func should_skip_checks{
+        syscall_ptr : felt*,
+        pedersen_ptr : HashBuiltin*,
+        range_check_ptr,
+        bitwise_ptr : BitwiseBuiltin*,
+    }(ctx : BlockHeaderValidationContext) -> (res: felt):
+        # Should skip if genesis block
+        # TODO: implement https://github.com/bitcoin-stark/khepri-starknet/issues/29
+
+        # Should skip if block already processed
+        # TODO: implement https://github.com/bitcoin-stark/khepri-starknet/issues/28
+        return (FALSE)
     end
 
     func accept_block{

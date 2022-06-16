@@ -164,7 +164,7 @@ namespace BlockHeaderVerifier:
         pedersen_ptr : HashBuiltin*,
         range_check_ptr,
         bitwise_ptr : BitwiseBuiltin*,
-    }(ctx : BlockHeaderValidationContext) -> (res: felt):
+    }(ctx : BlockHeaderValidationContext) -> (res : felt):
         # Should skip if genesis block
         # TODO: implement https://github.com/bitcoin-stark/khepri-starknet/issues/29
 

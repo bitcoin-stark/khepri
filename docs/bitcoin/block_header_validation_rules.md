@@ -26,9 +26,13 @@ If it is known, there is nothing more to do for us.
 
 ## Check proof of work
 
+[Issue](https://github.com/bitcoin-stark/khepri-starknet/issues/13)
+
 Check proof of work matches claimed amount. In other words, check that the proof of work is lower than (or equal) the target which is specified in the field `bits` of the header.
 
 ## Check previous block
+
+[PR](https://github.com/bitcoin-stark/khepri-starknet/pull/19)
 
 The hash of the previous block must point to a valid block that is already on the chain.
 
@@ -42,6 +46,8 @@ a reorg. If we don't want to handle reorgs for now, then it must strictly be the
 See <https://github.com/bitcoin/bitcoin/blob/master/src/validation.cpp#L3447>
 
 ### Check proof of work target (bits)
+
+[Issue](https://github.com/bitcoin-stark/khepri-starknet/issues/11)
 
 Check that the target (ie. the field `bits` of the header) is valid.
 
@@ -59,11 +65,15 @@ See <https://github.com/bitcoin/bitcoin/blob/master/src/validation.cpp#L3459>
 
 ### Check timestamp against prev
 
+[Issue](https://github.com/bitcoin-stark/khepri-starknet/issues/7)
+
 The famous "Median Past Time" rule where the clock's timestamp must be higher than the median of the previous 11 timestamps.
 
 See <https://github.com/bitcoin/bitcoin/blob/master/src/validation.cpp#L3471>
 
 ### Check timestamp
+
+[Issue](https://github.com/bitcoin-stark/khepri-starknet/issues/26)
 
 The block timestamp cannot be more than 2 hours in the future based on the MAX_FUTURE_BLOCK_TIME constant,
 relative to the adjusted time (the median time from the node’s peers).
@@ -71,6 +81,8 @@ relative to the adjusted time (the median time from the node’s peers).
 See <https://github.com/bitcoin/bitcoin/blob/master/src/validation.cpp#L3475>
 
 ### Reject blocks with outdated version
+
+[Issue](https://github.com/bitcoin-stark/khepri-starknet/issues/25)
 
 The block version must be higher than a given value depending on its height.
 

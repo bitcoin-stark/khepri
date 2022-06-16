@@ -147,6 +147,20 @@ namespace BlockHeaderVerifier:
         # RULE: Median Past Time
         median_past_time.assert_rule(ctx)
 
+        # RULE: Timestamp is not in the future
+        #
+        # This rule is a bit specific as it makes sense for accepting new blocks, but not really
+        # during Initial Block Download (aka IBD).
+        #
+        # In Bitcoin Core, the rule is implemented as: `block time <= adjusted-time + 2h`, where
+        # adjusted-time is the present time adjusted with the time of peers. The rule remains the same
+        # during IBD.
+        #
+        # In StarkNet, the only source of time we have is the current (StarkNet) block timestamp, which
+        # we cannot trust.
+        #
+        # Therefore, we cannot implement the rule as-is.
+
         # Accept block
         accept_block(ctx)
 

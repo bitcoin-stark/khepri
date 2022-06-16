@@ -17,3 +17,5 @@ artifacts
 build
 
 .DS_Store
+
+.env

@@ -2,7 +2,7 @@
 
 See <https://github.com/bitcoin/bitcoin/blob/master/src/validation.cpp#L3577>
 
-Note: the genesis block is treated specificaly: if the block hash is equal to the hash of the genesis block, then all checks are bypassed.
+Note: the genesis block is treated separately: if the current block hash is equal to the genesis block hash, then all checks are bypassed.
 
 This documentation keeps the order of checks as they are done in bitcoin core.
 
@@ -28,7 +28,7 @@ If it is known, there is nothing more to do for us.
 
 [Issue](https://github.com/bitcoin-stark/khepri-starknet/issues/13)
 
-Check proof of work matches claimed amount. In other words, check that the proof of work is lower than (or equal) the target which is specified in the field `bits` of the header.
+Check proof of work matches claimed amount. In other words, check that the proof of work is lower than (or equal) the target which is specified in the header `bits` field.
 
 ## Check previous block
 

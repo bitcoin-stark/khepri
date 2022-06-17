@@ -21,7 +21,7 @@ const TRUNC_MAX_TARGET = 0x00000000FFFF00000000000000000000000000000000000000000
 # Ref: https://en.bitcoin.it/wiki/Target
 # ------
 namespace check_pow:
-    # This function reverts if the hash of the iput black header is not lower that the block target
+    # This function reverts if the hash of the input block header is greater than the block target
     func assert_rule{
         syscall_ptr : felt*,
         pedersen_ptr : HashBuiltin*,

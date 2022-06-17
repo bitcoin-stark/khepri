@@ -114,8 +114,6 @@ namespace BlockHeaderVerifier:
         let (single_sha) = compute_sha256(data, 80)
         let (double_sha) = compute_sha256(single_sha, 32)
 
-        # %{ print('block hash:', ''.join([f'{memory[ids.double_sha + i]:08x}' for i in range(8)])) %}
-
         let (hash0) = swap_endianness_64(double_sha[6] * 2 ** 32 + double_sha[7], 8)
         let (hash1) = swap_endianness_64(double_sha[4] * 2 ** 32 + double_sha[5], 8)
         let (hash2) = swap_endianness_64(double_sha[2] * 2 ** 32 + double_sha[3], 8)

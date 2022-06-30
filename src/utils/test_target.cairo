@@ -81,11 +81,6 @@ func test_get_bytes_128{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_
     return ()
 end
 
-func felt_to_uint256{range_check_ptr}(x) -> (res : Uint256):
-    let (hi, lo) = split_felt(x)
-    return (Uint256(lo, hi))
-end
-
 struct Target_test_vector:
     member target : Uint256
     member bits : felt
@@ -102,49 +97,58 @@ func rec_test_targets{range_check_ptr}(len, test_data_ptr : Target_test_vector*)
 end
 
 @view
+func test_encode_target_single{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}():
+    let (target) = felt_to_Uint256(0x12)
+    let bits = 0x01120000
+    let (bits_computed) = internal.encode_target(target, FALSE)
+    assert bits = bits_computed
+    return ()
+end
+
+@view
 func test_encode_target{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}():
     alloc_locals
     let (local tests : Target_test_vector*) = alloc()
 
-    let (target) = felt_to_uint256(
+    let (target) = felt_to_Uint256(
         0x00000000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
     )
     assert tests[0] = Target_test_vector(target, 0x1d00ffff)
-    let (target) = felt_to_uint256(
+    let (target) = felt_to_Uint256(
         0x00000000FFFF0000000000000000000000000000000000000000000000000000
     )
     assert tests[1] = Target_test_vector(target, 0x1d00ffff)
-    let (target) = felt_to_uint256(
+    let (target) = felt_to_Uint256(
         0x00000000d86a0000000000000000000000000000000000000000000000000000
     )
     assert tests[2] = Target_test_vector(target, 0x1d00d86a)
-    let (target) = felt_to_uint256(
+    let (target) = felt_to_Uint256(
         0x00000000be710000000000000000000000000000000000000000000000000000
     )
     assert tests[3] = Target_test_vector(target, 0x1d00be71)
-    let (target) = felt_to_uint256(
+    let (target) = felt_to_Uint256(
         0x0000000065465700000000000000000000000000000000000000000000000000
     )
     assert tests[4] = Target_test_vector(target, 0x1c654657)
-    let (target) = felt_to_uint256(
+    let (target) = felt_to_Uint256(
         0x00000000000e7256000000000000000000000000000000000000000000000000
     )
     assert tests[5] = Target_test_vector(target, 0x1b0e7256)
-    let (target) = felt_to_uint256(
+    let (target) = felt_to_Uint256(
         0x0000000000000abbcf0000000000000000000000000000000000000000000000
     )
     assert tests[6] = Target_test_vector(target, 0x1a0abbcf)
-    let (target) = felt_to_uint256(
+    let (target) = felt_to_Uint256(
         0x00000000000004fa620000000000000000000000000000000000000000000000
     )
     assert tests[7] = Target_test_vector(target, 0x1a04fa62)
-    let (target) = felt_to_uint256(
+    let (target) = felt_to_Uint256(
         0x000000000000000000ff18000000000000000000000000000000000000000000
     )
     assert tests[8] = Target_test_vector(target, 0x1800ff18)
-    let (target) = felt_to_uint256(0xc0de000000)
+    let (target) = felt_to_Uint256(0xc0de000000)
     assert tests[9] = Target_test_vector(target, 0x0600c0de)
-    let (target) = felt_to_uint256(0x1234560000)
+    let (target) = felt_to_Uint256(0x1234560000)
     assert tests[10] = Target_test_vector(target, 0x05123456)
 
     rec_test_targets(11, tests)
@@ -166,9 +170,9 @@ func test_encode_decode_target{
     test_internal.test_encode_decode_target(0x04123456, 0x12345600, FALSE, FALSE, 0x04123456)
     test_internal.test_encode_decode_target(0x05009234, 0x92340000, FALSE, FALSE, 0x05009234)
 
-    test_internal.test_encode_decode_target(
+    test_internal.test_encode_decode_target_Uint256(
         0x20123456,
-        0x1234560000000000000000000000000000000000000000000000000000000000,
+        Uint256(0x00000000000000000000000000000000, 0x12345600000000000000000000000000),
         FALSE,
         FALSE,
         0x20123456,
@@ -239,8 +243,9 @@ namespace test_internal:
         expected_reencoded_bits : felt,
     ):
         alloc_locals
-        let (local decoded_target : Uint256, negative : felt,
-            overflow : felt) = internal.decode_target(bits)
+        let (
+            local decoded_target : Uint256, negative : felt, overflow : felt
+        ) = internal.decode_target(bits)
 
         with_attr error_message(
                 "For target {bits}, expected overflow to be {expected_overflow}, got {overflow}"):

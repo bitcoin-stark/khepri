@@ -237,7 +237,7 @@ namespace internal:
             nonce=2083236893,
             bits=0x1d00ffff,
             prev_block=Uint256(0, 0),
-            merkle_root=genesis_merkel_root,
+            merkle_root=genesis_merkle_root,
         )
         return (genesis_block_header)
     end

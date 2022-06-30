@@ -1,11 +1,13 @@
 %lang starknet
 
-from starkware.cairo.common.uint256 import Uint256
+from starkware.cairo.common.uint256 import Uint256, uint256_mul
 from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.math import unsigned_div_rem, split_felt, assert_lt
 from starkware.cairo.common.pow import pow
-from starkware.cairo.common.math_cmp import is_le
+from starkware.cairo.common.math_cmp import is_le, is_not_zero
 from starkware.cairo.common.bool import TRUE, FALSE
+
+from utils.math import felt_to_Uint256
 
 #
 # The "compact" format is a representation of a whole
@@ -43,37 +45,39 @@ namespace internal:
         res : Uint256, negative : felt, overflow : felt
     ):
         alloc_locals
-        let (exponent, rest) = unsigned_div_rem(bits, 2 ** 24)
-        let (is_neg, local mantissa) = unsigned_div_rem(rest, 2 ** 23)
+        let (size, remainder) = unsigned_div_rem(bits, 2 ** 24)
+        let (neg_bit, local nword) = unsigned_div_rem(remainder, 2 ** 23)
+
+        let (size_is_le_3) = is_le(size, 3)
+        if size_is_le_3 == TRUE:
+            let (exp) = pow(256, 3 - size)
+            let (nword, _) = unsigned_div_rem(nword, exp)
+            let (is_nword_not_zero) = is_not_zero(nword)
+            let is_neg = is_nword_not_zero * neg_bit
+            return (res=Uint256(nword, 0), negative=is_neg, overflow=FALSE)
+        end
+
+        let (is_nword_not_zero) = is_not_zero(nword)
+        let is_neg = is_nword_not_zero * neg_bit
 
         # Check overflow
-        let (exponent_is_gt_34) = is_le(35, exponent)
-        if exponent_is_gt_34 == TRUE:
-            return (Uint256(0, 0), is_neg, TRUE)
-        end
-        let (exponent_is_gt_33) = is_le(34, exponent)
-        let (mantissa_is_gt_0xff) = is_le(0xff + 1, mantissa)
-        if exponent_is_gt_33 * mantissa_is_gt_0xff == TRUE:
-            return (Uint256(0, 0), is_neg, TRUE)
-        end
-        let (exponent_is_gt_32) = is_le(33, exponent)
-        let (mantissa_is_gt_0xffff) = is_le(0xffff + 1, mantissa)
-        if exponent_is_gt_32 * mantissa_is_gt_0xffff == TRUE:
-            return (Uint256(0, 0), is_neg, TRUE)
-        end
+        let (size_is_gt_34) = is_le(35, size)
+        let (size_is_gt_33) = is_le(34, size)
+        let (size_is_gt_32) = is_le(33, size)
+        let (nword_is_gt_0xff) = is_le(0xff + 1, nword)
+        let (nword_is_gt_0xffff) = is_le(0xffff + 1, nword)
 
-        let (exponent_is_le_3) = is_le(exponent, 3)
-        if exponent_is_le_3 == TRUE:
-            let (exp) = pow(256, 3 - exponent)
-            let (tmp, _) = unsigned_div_rem(mantissa, exp)
-            let res_target = split_felt(tmp)
-            return (Uint256(res_target.low, res_target.high), is_neg, FALSE)
-        end
+        let overflow = size_is_gt_34
+        let overflow = overflow + size_is_gt_33 * nword_is_gt_0xff
+        let overflow = overflow + size_is_gt_32 * nword_is_gt_0xffff
+        let overflow = overflow * is_nword_not_zero
+        let (overflow) = is_not_zero(overflow)
 
-        let (exp) = pow(256, exponent - 3)
-        let tmp = mantissa * exp
-        let res_target = split_felt(tmp)
-        return (Uint256(res_target.low, res_target.high), is_neg, FALSE)
+        let (exp) = pow(256, size - 3)
+        let (exp_) = felt_to_Uint256(exp)
+        let (nword_) = felt_to_Uint256(nword)
+        let (mul_low, mul_high) = uint256_mul(nword_, exp_)
+        return (mul_low, is_neg, overflow)
     end
 
     func encode_target{range_check_ptr}(target : Uint256, negative : felt) -> (bits):

@@ -30,8 +30,36 @@ from starkware.cairo.common.bool import TRUE, FALSE
 
 func decode_target{range_check_ptr}(bits : felt) -> (res : Uint256, overflow : felt):
     alloc_locals
-    let (exponent, _) = unsigned_div_rem(bits, 2 ** 24)
-    let (_, local mantissa) = unsigned_div_rem(bits, 2 ** 23)
+    let (exponent, local mantissa) = unsigned_div_rem(bits, 2 ** 24)
+
+    # Check the target is not negative
+    let (is_neg) = is_le(0x00800000, mantissa)
+    assert is_neg = FALSE
+
+    # Check overflow
+    let (exponent_is_gt_34) = is_le(35, exponent)
+    if exponent_is_gt_34 == TRUE:
+        return (Uint256(0, 0), TRUE)
+    end
+    let (exponent_is_gt_33) = is_le(34, exponent)
+    let (mantissa_is_gt_0xff) = is_le(0xff + 1, mantissa)
+    if exponent_is_gt_33 * mantissa_is_gt_0xff == TRUE:
+        return (Uint256(0, 0), TRUE)
+    end
+    let (exponent_is_gt_32) = is_le(33, exponent)
+    let (mantissa_is_gt_0xffff) = is_le(0xffff + 1, mantissa)
+    if exponent_is_gt_32 * mantissa_is_gt_0xffff == TRUE:
+        return (Uint256(0, 0), TRUE)
+    end
+
+    let (exponent_is_le_3) = is_le(exponent, 3)
+    if exponent_is_le_3 == TRUE:
+        let (exp) = pow(256, 3 - exponent)
+        let (tmp, _) = unsigned_div_rem(mantissa, exp)
+        let res_target = split_felt(tmp)
+        return (Uint256(res_target.low, res_target.high), FALSE)
+    end
+
     let (exp) = pow(256, exponent - 3)
     let tmp = mantissa * exp
     let res_target = split_felt(tmp)

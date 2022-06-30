@@ -5,8 +5,9 @@
 # Starkware dependencies
 from starkware.cairo.common.cairo_builtins import HashBuiltin, BitwiseBuiltin
 from starkware.cairo.common.alloc import alloc
-from starkware.cairo.common.uint256 import Uint256, uint256_lt
+from starkware.cairo.common.uint256 import Uint256, uint256_lt, uint256_eq
 from starkware.cairo.common.bool import TRUE, FALSE
+from starkware.cairo.common.math import split_felt, assert_not_equal
 
 from utils.common import swap_endianness_64
 from utils.sha256.sha256_contract import compute_sha256
@@ -57,6 +58,8 @@ namespace BlockHeaderVerifier:
     # ------
 
     func constructor{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}():
+        let (genesis_block_header : BlockHeader) = internal.genesis_block_header()
+        internal.write_header_to_storage(0, genesis_block_header)
         return ()
     end
 
@@ -73,14 +76,16 @@ namespace BlockHeaderVerifier:
         alloc_locals
 
         # Verify provided block header
-        let (local header) = prepare_header(data)
+        let (local header) = internal.prepare_header(data)
         let (previous_block_header) = block_header_by_height(height - 1)
         let ctx = BlockHeaderValidationContext(height, header, previous_block_header)
-        process_header(ctx)
+        internal.process_header(ctx)
 
         return ()
     end
+end
 
+namespace internal:
     # Assuming data is the header packed as an array of 4 bytes
     func prepare_header{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(data : felt*) -> (
         res : BlockHeader
@@ -177,8 +182,10 @@ namespace BlockHeaderVerifier:
         range_check_ptr,
         bitwise_ptr : BitwiseBuiltin*,
     }(ctx : BlockHeaderValidationContext) -> (res : felt):
-        # Should skip if genesis block
-        # TODO: implement https://github.com/bitcoin-stark/khepri-starknet/issues/29
+        # Should never encounter the genesis block
+        let (genesis_block_header : BlockHeader) = internal.genesis_block_header()
+        let (is_genesis_hash) = uint256_eq(ctx.block_header.hash, genesis_block_header.hash)
+        assert is_genesis_hash = FALSE
 
         # Should skip if block already processed
         # TODO: implement https://github.com/bitcoin-stark/khepri-starknet/issues/28
@@ -193,13 +200,50 @@ namespace BlockHeaderVerifier:
     }(ctx : BlockHeaderValidationContext):
         alloc_locals
         # Write current header to storage
-        block_header_hash_.write(ctx.height, ctx.block_header.hash)
-        block_header_.write(ctx.block_header.hash, ctx.block_header)
+        write_header_to_storage(ctx.height, ctx.block_header)
 
         # Consensus rules callback
         previous_block_hash.on_block_accepted(ctx)
         check_pow.on_block_accepted(ctx)
         median_past_time.on_block_accepted(ctx)
         return ()
+    end
+
+    func write_header_to_storage{
+        syscall_ptr : felt*,
+        pedersen_ptr : HashBuiltin*,
+        range_check_ptr,
+        bitwise_ptr : BitwiseBuiltin*,
+    }(height : felt, block_header : BlockHeader):
+        block_header_hash_.write(height, block_header.hash)
+        block_header_.write(block_header.hash, block_header)
+        return ()
+    end
+
+    # Returns the hardcoded genesis block.
+    # See https://github.com/bitcoin/bitcoin/blob/master/src/chainparams.cpp
+    # and https://www.blockchain.com/btc/block/000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f
+    func genesis_block_header{range_check_ptr}(genesis_block_header : BlockHeader):
+        let (genesis_hash : Uint256) = felt_to_uint256(
+            0x19d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f
+        )
+        let (genesis_merkle_root : Uint256) = felt_to_uint256(
+            0x4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b
+        )
+        let genesis_block_header = BlockHeader(
+            hash=genesis_hash,
+            version=1,
+            timestamp=1231006505,
+            nonce=2083236893,
+            bits=0x1d00ffff,
+            prev_block=Uint256(0, 0),
+            merkle_root=genesis_merkle_root,
+        )
+        return (genesis_block_header)
+    end
+
+    func felt_to_uint256{range_check_ptr}(x) -> (res : Uint256):
+        let (hi, lo) = split_felt(x)
+        return (Uint256(lo, hi))
     end
 end

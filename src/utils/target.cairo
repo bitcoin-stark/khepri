@@ -2,7 +2,7 @@
 
 from starkware.cairo.common.uint256 import Uint256
 from starkware.cairo.common.alloc import alloc
-from starkware.cairo.common.math import unsigned_div_rem, split_felt
+from starkware.cairo.common.math import unsigned_div_rem, split_felt, assert_lt
 from starkware.cairo.common.pow import pow
 from starkware.cairo.common.math_cmp import is_le
 from starkware.cairo.common.bool import TRUE, FALSE
@@ -43,10 +43,8 @@ namespace internal:
         res : Uint256, negative : felt, overflow : felt
     ):
         alloc_locals
-        let (exponent, local mantissa) = unsigned_div_rem(bits, 2 ** 24)
-
-        # Check the target is not negative
-        let (is_neg) = is_le(0x00800000, mantissa)
+        let (exponent, rest) = unsigned_div_rem(bits, 2 ** 24)
+        let (is_neg, local mantissa) = unsigned_div_rem(rest, 2 ** 23)
 
         # Check overflow
         let (exponent_is_gt_34) = is_le(35, exponent)
@@ -100,12 +98,21 @@ namespace internal:
         let (local compact) = get_truncated_target(3, size, bytes, 0)
 
         let (is_neg) = is_le(0x00800000, compact)
+
+        # Assert the size doesn't overflow
+        assert_lt(size + is_neg, 256)
+
+        local bits
         if is_neg == 1:
             let (adj_compact, _) = unsigned_div_rem(compact, 256)
-            return (adj_compact + (size + 1) * 2 ** 24)
+            assert bits = adj_compact + (size + 1) * 2 ** 24
+            tempvar range_check_ptr = range_check_ptr
         else:
-            return (compact + size * 2 ** 24)
+            assert bits = compact + size * 2 ** 24
+            tempvar range_check_ptr = range_check_ptr
         end
+        let bits = bits + negative * 2 ** 24
+        return (bits=bits)
     end
 
     func pad(pad_to : felt, len : felt, bytes : felt*):
@@ -123,6 +130,9 @@ namespace internal:
     func _get_bytes_128{range_check_ptr : felt}(x, bytes : felt*, bytes_len : felt) -> (
         bytes_len : felt
     ):
+        if x == 0:
+            return (0)
+        end
         let (q, r) = unsigned_div_rem(x, 256)
         [bytes] = r
         if q == 0:
@@ -140,8 +150,11 @@ namespace internal:
     end
 
     func get_truncated_target(size, bytes_len, bytes : felt*, acc : felt) -> (res):
-        if bytes_len * size == 0:
+        if size == 0:
             return (acc)
+        end
+        if bytes_len == 0:
+            return get_truncated_target(size - 1, bytes_len, bytes, acc * 256)
         end
 
         return get_truncated_target(

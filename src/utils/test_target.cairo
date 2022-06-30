@@ -6,7 +6,7 @@ from starkware.cairo.common.math import split_felt
 from starkware.cairo.common.uint256 import Uint256, uint256_eq
 from starkware.cairo.common.bool import TRUE, FALSE
 
-from utils.target import decode_target, encode_target, pad, get_bytes_128, _get_bytes_128
+from utils.target import internal
 from utils.array import arr_eq
 from utils.math import felt_to_Uint256
 
@@ -16,7 +16,7 @@ func test_target_genesis{
 }():
     alloc_locals
     let bits = 0x1d00ffff
-    let (local target, overflow : felt) = decode_target(bits)
+    let (local target, negative : felt, overflow : felt) = internal.decode_target(bits)
     let (hi, lo) = split_felt(0x00000000ffff0000000000000000000000000000000000000000000000000000)
     let (is_eq) = uint256_eq(target, Uint256(lo, hi))
     assert TRUE = is_eq
@@ -29,7 +29,7 @@ func test_target{
 }():
     alloc_locals
     let bits = 0x1729d72d
-    let (local target, overflow : felt) = decode_target(bits)
+    let (local target, negative : felt, overflow : felt) = internal.decode_target(bits)
     let (hi, lo) = split_felt(0x00000000000000000029d72d0000000000000000000000000000000000000000)
     let (is_eq) = uint256_eq(target, Uint256(lo, hi))
     assert TRUE = is_eq
@@ -44,7 +44,7 @@ func test_pad{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}
     assert arr[1] = 2
     assert arr[2] = 3
     assert arr[3] = 4
-    pad(6, 4, arr)
+    internal.pad(6, 4, arr)
     local res : felt* = new (1, 2, 3, 4, 0, 0)
     arr_eq(arr, 6, res, 6)
     return ()
@@ -54,28 +54,28 @@ end
 func test_get_bytes_128{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}():
     alloc_locals
     let value = 0x123456789
-    let (size, bytes) = get_bytes_128(value)
+    let (size, bytes) = internal.get_bytes_128(value)
     local res : felt* = new (89, 67, 45, 23, 01)
     arr_eq(bytes, size, res, size)
 
     let value = 0
-    let (size, bytes) = get_bytes_128(value)
+    let (size, bytes) = internal.get_bytes_128(value)
     local res : felt* = new (0)
     arr_eq(bytes, size, res, size)
     let value = 1
-    let (size, bytes) = get_bytes_128(value)
+    let (size, bytes) = internal.get_bytes_128(value)
     local res : felt* = new (1)
     arr_eq(bytes, size, res, size)
 
-    let (local size, local bytes) = get_bytes_128(0x0004444000077770000)
+    let (local size, local bytes) = internal.get_bytes_128(0x0004444000077770000)
     local res : felt* = new (44, 44, 00, 00, 77, 77, 00, 00)
     arr_eq(bytes, size, res, size)
 
-    let (local size, local bytes) = get_bytes_128(2 ** 128 - 1)
+    let (local size, local bytes) = internal.get_bytes_128(2 ** 128 - 1)
     local res : felt* = new (255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255)
     arr_eq(bytes, size, res, size)
 
-    let (size) = _get_bytes_128(0x0004444000077770000, bytes + size, size)
+    let (size) = internal._get_bytes_128(0x0004444000077770000, bytes + size, size)
     local res : felt* = new (255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 44, 44, 00, 00, 77, 77, 00, 00)
     arr_eq(bytes, size, res, size)
     return ()
@@ -96,7 +96,7 @@ func rec_test_targets{range_check_ptr}(len, test_data_ptr : Target_test_vector*)
         return ()
     end
 
-    let (bits_computed) = encode_target(test_data_ptr.target)
+    let (bits_computed) = internal.encode_target(test_data_ptr.target, FALSE)
     assert test_data_ptr.bits = bits_computed
     return rec_test_targets(len - 1, test_data_ptr + Target_test_vector.SIZE)
 end
@@ -160,37 +160,38 @@ func test_encode_decode_target{
 }():
     alloc_locals
 
-    test_internal.test_encode_decode_target(0x01123456, 0x00000012, FALSE, 0x01120000)
-    test_internal.test_encode_decode_target(0x02123456, 0x00001234, FALSE, 0x02123400)
-    test_internal.test_encode_decode_target(0x03123456, 0x00123456, FALSE, 0x03123456)
-    test_internal.test_encode_decode_target(0x04123456, 0x12345600, FALSE, 0x04123456)
-    test_internal.test_encode_decode_target(0x05009234, 0x92340000, FALSE, 0x05009234)
+    test_internal.test_encode_decode_target(0x01123456, 0x00000012, FALSE, FALSE, 0x01120000)
+    test_internal.test_encode_decode_target(0x02123456, 0x00001234, FALSE, FALSE, 0x02123400)
+    test_internal.test_encode_decode_target(0x03123456, 0x00123456, FALSE, FALSE, 0x03123456)
+    test_internal.test_encode_decode_target(0x04123456, 0x12345600, FALSE, FALSE, 0x04123456)
+    test_internal.test_encode_decode_target(0x05009234, 0x92340000, FALSE, FALSE, 0x05009234)
 
     test_internal.test_encode_decode_target(
         0x20123456,
         0x1234560000000000000000000000000000000000000000000000000000000000,
         FALSE,
+        FALSE,
         0x20123456,
     )
 
-    test_internal.test_encode_decode_target(0xff123456, 0, TRUE, 0)
+    test_internal.test_encode_decode_target(0xff123456, 0, FALSE, TRUE, 0)
 
-    test_internal.test_encode_decode_target(0, 0, FALSE, 0)
-    test_internal.test_encode_decode_target(0x00123456, 0, FALSE, 0)
-    test_internal.test_encode_decode_target(0x01003456, 0, FALSE, 0)
-    test_internal.test_encode_decode_target(0x02000056, 0, FALSE, 0)
-    test_internal.test_encode_decode_target(0x03000000, 0, FALSE, 0)
-    test_internal.test_encode_decode_target(0x04000000, 0, FALSE, 0)
-    test_internal.test_encode_decode_target(0x00923456, 0, FALSE, 0)
-    test_internal.test_encode_decode_target(0x01803456, 0, FALSE, 0)
-    test_internal.test_encode_decode_target(0x02800056, 0, FALSE, 0)
-    test_internal.test_encode_decode_target(0x03800000, 0, FALSE, 0)
-    test_internal.test_encode_decode_target(0x04800000, 0, FALSE, 0)
-    test_internal.test_encode_decode_target(0x01003456, 0, FALSE, 0)
+    test_internal.test_encode_decode_target(0, 0, FALSE, FALSE, 0)
+    test_internal.test_encode_decode_target(0x00123456, 0, FALSE, FALSE, 0)
+    test_internal.test_encode_decode_target(0x01003456, 0, FALSE, FALSE, 0)
+    test_internal.test_encode_decode_target(0x02000056, 0, FALSE, FALSE, 0)
+    test_internal.test_encode_decode_target(0x03000000, 0, FALSE, FALSE, 0)
+    test_internal.test_encode_decode_target(0x04000000, 0, FALSE, FALSE, 0)
+    test_internal.test_encode_decode_target(0x00923456, 0, FALSE, FALSE, 0)
+    test_internal.test_encode_decode_target(0x01803456, 0, FALSE, FALSE, 0)
+    test_internal.test_encode_decode_target(0x02800056, 0, FALSE, FALSE, 0)
+    test_internal.test_encode_decode_target(0x03800000, 0, FALSE, FALSE, 0)
+    test_internal.test_encode_decode_target(0x04800000, 0, FALSE, FALSE, 0)
+    test_internal.test_encode_decode_target(0x01003456, 0, FALSE, FALSE, 0)
 
     # Make sure that we don't generate compacts with the 0x00800000 bit set
     let (local target0x80 : Uint256) = felt_to_Uint256(0x80)
-    let (local bits) = encode_target(target0x80)
+    let (local bits) = internal.encode_target(target0x80, FALSE)
     with_attr error_message("For target 0x80, expected bits to be 0x02008000U, got {bits}"):
         assert 0x02008000 = bits
     end
@@ -207,6 +208,7 @@ namespace test_internal:
     }(
         bits : felt,
         expected_decoded_target : felt,
+        expected_negative : felt,
         expected_overflow : felt,
         expected_reencoded_bits : felt,
     ):
@@ -215,7 +217,11 @@ namespace test_internal:
             expected_decoded_target
         )
         test_encode_decode_target_Uint256(
-            bits, uint256_expected_decoded_target, expected_overflow, expected_reencoded_bits
+            bits,
+            uint256_expected_decoded_target,
+            expected_negative,
+            expected_overflow,
+            expected_reencoded_bits,
         )
         return ()
     end
@@ -228,11 +234,13 @@ namespace test_internal:
     }(
         bits : felt,
         expected_decoded_target : Uint256,
+        expected_negative : felt,
         expected_overflow : felt,
         expected_reencoded_bits : felt,
     ):
         alloc_locals
-        let (local decoded_target : Uint256, overflow : felt) = decode_target(bits)
+        let (local decoded_target : Uint256, negative : felt,
+            overflow : felt) = internal.decode_target(bits)
 
         with_attr error_message(
                 "For target {bits}, expected overflow to be {expected_overflow}, got {overflow}"):
@@ -242,6 +250,11 @@ namespace test_internal:
             return ()
         end
 
+        with_attr error_message(
+                "For target {bits}, expected negative to be {expected_negative}, got {negative}"):
+            assert expected_negative = negative
+        end
+
         let (decoded_are_equal) = uint256_eq(decoded_target, expected_decoded_target)
 
         with_attr error_message(
@@ -249,7 +262,7 @@ namespace test_internal:
             assert decoded_are_equal = TRUE
         end
 
-        let (local reencoded_bits : felt) = encode_target(decoded_target)
+        let (local reencoded_bits : felt) = internal.encode_target(decoded_target, negative)
 
         with_attr error_message(
                 "For target {bits}, expected reencoded bits to be {expected_reencoded_bits}, got {reencoded_bits}"):

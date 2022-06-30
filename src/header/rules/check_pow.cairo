@@ -31,8 +31,7 @@ namespace check_pow:
         alloc_locals
 
         let header_hash = ctx.block_header.hash
-        let (target : Uint256, overflow : felt) = decode_target(ctx.block_header.bits)
-        assert overflow = FALSE
+        let (target : Uint256) = decode_target(ctx.block_header.bits)
         let (res) = uint256_lt(header_hash, target)
 
         local target_hi = target.high

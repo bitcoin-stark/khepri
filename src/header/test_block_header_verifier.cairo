@@ -4,7 +4,7 @@ from starkware.cairo.common.cairo_builtins import HashBuiltin, BitwiseBuiltin
 from starkware.cairo.common.uint256 import Uint256
 
 from header.model import BlockHeaderValidationContext, BlockHeader
-from header.library import BlockHeaderVerifier
+from header.library import BlockHeaderVerifier, internal
 from header.test_utils import test_utils
 
 @view
@@ -28,7 +28,7 @@ func test_process_block{
         height=1, block_header=header1, previous_block_header=header0
     )
 
-    BlockHeaderVerifier.process_header(ctx)
+    internal.process_header(ctx)
 
     return ()
 end

@@ -17,7 +17,8 @@ from starkware.cairo.common.uint256 import Uint256
 
 from openzeppelin.security.safemath import SafeUint256
 
-from header.library import BlockHeader, BlockHeaderVerifier, assert_block_header
+from header.model import BlockHeader, BlockHeaderValidationContext
+from header.storage import storage
 from utils.math import clamp, min_uint256, felt_to_Uint256
 from utils.target import decode_target, encode_target
 from bitcoin.params import Params
@@ -34,11 +35,14 @@ from bitcoin.params import Params
 namespace target:
     # This function checks the block's target (bits)
     func assert_rule{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
-        header : BlockHeader, last_header : BlockHeader, last_height : felt, params : Params
+        ctx : BlockHeaderValidationContext, params : Params
     ):
         alloc_locals
-        let (local expected_bits) = internal.getNextWorkRequired(last_header, last_height, params)
-        local block_bits = header.bits
+        let last_height = ctx.height - 1
+        let (local expected_bits) = internal.getNextWorkRequired(
+            ctx.previous_block_header, last_height, params
+        )
+        local block_bits = ctx.block_header.bits
         with_attr error_message(
                 "[invalid-header]::bad-diffbits: expected block target to be {expected_bits}, got {block_bits}"):
             assert expected_bits = block_bits
@@ -75,9 +79,7 @@ namespace internal:
         # Go back by what we want to be 14 days worth of blocks
         let height_first = last_height - (params.difficulty_adjustment_interval - 1)
         assert_le(0, height_first)
-        let (first_block_header : BlockHeader) = BlockHeaderVerifier.block_header_by_height(
-            height_first
-        )
+        let (first_block_header : BlockHeader) = storage.block_header_by_height(height_first)
         assert_block_header(first_block_header)
 
         # Limit adjustment step
@@ -102,5 +104,10 @@ namespace internal:
 
         let (new_bits) = encode_target(new_target)
         return (bits=new_bits)
+    end
+
+    func assert_block_header{range_check_ptr}(block_header : BlockHeader):
+        assert_not_zero(block_header.version)
+        return ()
     end
 end

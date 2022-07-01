@@ -8,6 +8,7 @@ from starkware.cairo.common.uint256 import Uint256
 
 from header.model import BlockHeader
 from header.library import BlockHeaderVerifier
+from header.storage import storage
 
 # ------
 # CONSTRUCTOR
@@ -26,21 +27,21 @@ end
 func block_header_hash{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
     block_height
 ) -> (block_header_hash : Uint256):
-    return BlockHeaderVerifier.block_header_hash(block_height)
+    return storage.block_header_hash(block_height)
 end
 
 @view
 func block_header_by_hash{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
     block_header_hash : Uint256
 ) -> (block_header : BlockHeader):
-    return BlockHeaderVerifier.block_header_by_hash(block_header_hash)
+    return storage.block_header_by_hash(block_header_hash)
 end
 
 @view
 func block_header_by_height{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
     block_height
 ) -> (block_header : BlockHeader):
-    return BlockHeaderVerifier.block_header_by_height(block_height)
+    return storage.block_header_by_height(block_height)
 end
 
 # ------------------

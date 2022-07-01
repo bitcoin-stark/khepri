@@ -11,60 +11,23 @@ from starkware.cairo.common.math import split_felt, assert_not_equal, assert_not
 
 from utils.common import swap_endianness_64
 from utils.sha256.sha256_contract import compute_sha256
+
 from header.model import BlockHeader, BlockHeaderValidationContext
+from header.storage import storage
 from header.rules.median_past_time import median_past_time
 from header.rules.check_pow import check_pow
 from header.rules.previous_block_hash import previous_block_hash
-
-func assert_block_header{range_check_ptr}(block_header : BlockHeader):
-    assert_not_zero(block_header.version)
-    return ()
-end
-
-# ------
-# STORAGE
-# ------
-@storage_var
-func block_header_hash_(block_height : felt) -> (block_header_hash : Uint256):
-end
-
-@storage_var
-func block_header_(block_header_hash : Uint256) -> (block_header : BlockHeader):
-end
+from header.rules.target import target
+from bitcoin.params import Params, get_params
 
 namespace BlockHeaderVerifier:
-    # -----
-    # VIEWS
-    # -----
-    func block_header_hash{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
-        block_height
-    ) -> (block_header_hash : Uint256):
-        let (block_header_hash) = block_header_hash_.read(block_height)
-        return (block_header_hash)
-    end
-
-    func block_header_by_hash{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
-        block_header_hash : Uint256
-    ) -> (block_header : BlockHeader):
-        let (block_header) = block_header_.read(block_header_hash)
-        return (block_header)
-    end
-
-    func block_header_by_height{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
-        block_header_height : felt
-    ) -> (block_header : BlockHeader):
-        let (block_header_hash) = block_header_hash_.read(block_header_height)
-        let (block_header) = block_header_.read(block_header_hash)
-        return (block_header)
-    end
-
     # ------
     # CONSTRUCTOR
     # ------
 
     func constructor{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}():
         let (genesis_block_header : BlockHeader) = internal.genesis_block_header()
-        internal.write_header_to_storage(0, genesis_block_header)
+        storage.write_header(0, genesis_block_header)
         return ()
     end
 
@@ -82,7 +45,7 @@ namespace BlockHeaderVerifier:
 
         # Verify provided block header
         let (local header) = internal.prepare_header(data)
-        let (previous_block_header) = block_header_by_height(height - 1)
+        let (previous_block_header) = storage.block_header_by_height(height - 1)
         let ctx = BlockHeaderValidationContext(height, header, previous_block_header)
         internal.process_header(ctx)
 
@@ -145,6 +108,8 @@ namespace internal:
         bitwise_ptr : BitwiseBuiltin*,
     }(ctx : BlockHeaderValidationContext):
         alloc_locals
+        let (local params : Params) = get_params()
+
         let (should_skip) = should_skip_checks(ctx)
         if should_skip == TRUE:
             return ()
@@ -157,6 +122,9 @@ namespace internal:
 
         # RULE: Proof Of Work
         check_pow.assert_rule(ctx)
+
+        # RULE: Check proof of work target (bits)
+        target.assert_rule(ctx, params)
 
         # RULE: Median Past Time
         median_past_time.assert_rule(ctx)
@@ -205,23 +173,12 @@ namespace internal:
     }(ctx : BlockHeaderValidationContext):
         alloc_locals
         # Write current header to storage
-        write_header_to_storage(ctx.height, ctx.block_header)
+        storage.write_header(ctx.height, ctx.block_header)
 
         # Consensus rules callback
         previous_block_hash.on_block_accepted(ctx)
         check_pow.on_block_accepted(ctx)
         median_past_time.on_block_accepted(ctx)
-        return ()
-    end
-
-    func write_header_to_storage{
-        syscall_ptr : felt*,
-        pedersen_ptr : HashBuiltin*,
-        range_check_ptr,
-        bitwise_ptr : BitwiseBuiltin*,
-    }(height : felt, block_header : BlockHeader):
-        block_header_hash_.write(height, block_header.hash)
-        block_header_.write(block_header.hash, block_header)
         return ()
     end
 

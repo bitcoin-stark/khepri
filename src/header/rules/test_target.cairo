@@ -4,7 +4,8 @@ from starkware.cairo.common.cairo_builtins import HashBuiltin
 from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.uint256 import Uint256
 
-from header.library import BlockHeader, block_header_hash_, block_header_
+from header.model import BlockHeader, BlockHeaderValidationContext
+from header.storage import block_header_hash_, block_header_
 from header.rules.target import target
 from utils.target import decode_target, encode_target
 from utils.math import felt_to_Uint256
@@ -44,7 +45,10 @@ func test_target_rule_no_retarget{
         hash=Uint256(0, 2)
         )
 
-    target.assert_rule(header, last_header, 10 * RETARGET_HEIGHT - 100, params)
+    let ctx = BlockHeaderValidationContext(
+        height=10 * RETARGET_HEIGHT - 100, block_header=header, previous_block_header=last_header
+    )
+    target.assert_rule(ctx, params)
 
     return ()
 end
@@ -82,9 +86,11 @@ func test_target_rule_no_retarget_wrong_target{
         hash=Uint256(0, 2)
         )
 
+    let ctx = BlockHeaderValidationContext(
+        height=10 * RETARGET_HEIGHT - 100, block_header=header, previous_block_header=last_header
+    )
     %{ expect_revert(error_message="[invalid-header]::bad-diffbits: expected block target to be 50373648, got 41234432") %}
-    target.assert_rule(header, last_header, 10 * RETARGET_HEIGHT - 100, params)
-
+    target.assert_rule(ctx, params)
     return ()
 end
 
@@ -133,8 +139,10 @@ func test_target_rule_retarget{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*,
         hash=Uint256(0, 0)
         )
 
-    target.assert_rule(header, last_header, last_height, params)
-
+    let ctx = BlockHeaderValidationContext(
+        height=last_height + 1, block_header=header, previous_block_header=last_header
+    )
+    target.assert_rule(ctx, params)
     return ()
 end
 
@@ -182,9 +190,11 @@ func test_target_rule_retarget_wrong_target{
         hash=Uint256(0, 0)
         )
 
+    let ctx = BlockHeaderValidationContext(
+        height=last_height + 1, block_header=header, previous_block_header=last_header
+    )
     %{ expect_revert(error_message="[invalid-header]::bad-diffbits: expected block target to be 50415648, got 50373648") %}
-    target.assert_rule(header, last_header, last_height, params)
-
+    target.assert_rule(ctx, params)
     return ()
 end
 
@@ -235,8 +245,10 @@ func test_target_rule_retarget_with_too_high_timestamp{
         hash=Uint256(0, 0)
         )
 
-    target.assert_rule(header, last_header, last_height, params)
-
+    let ctx = BlockHeaderValidationContext(
+        height=last_height + 1, block_header=header, previous_block_header=last_header
+    )
+    target.assert_rule(ctx, params)
     return ()
 end
 
@@ -287,7 +299,9 @@ func test_target_rule_retarget_with_too_low_timestamp{
         hash=Uint256(0, 0)
         )
 
-    target.assert_rule(header, last_header, last_height, params)
-
+    let ctx = BlockHeaderValidationContext(
+        height=last_height + 1, block_header=header, previous_block_header=last_header
+    )
+    target.assert_rule(ctx, params)
     return ()
 end

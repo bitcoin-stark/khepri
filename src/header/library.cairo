@@ -28,7 +28,7 @@ namespace BlockHeaderVerifier:
 
     func constructor{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}():
         let (genesis_block_header : BlockHeader) = internal.genesis_block_header()
-        storage.write_header(0, genesis_block_header)
+        storage.unsafe_write_header(0, genesis_block_header)
         return ()
     end
 
@@ -41,13 +41,15 @@ namespace BlockHeaderVerifier:
         pedersen_ptr : HashBuiltin*,
         bitwise_ptr : BitwiseBuiltin*,
         range_check_ptr,
-    }(height : felt, data_len : felt, data : felt*):
+    }(data_len : felt, data : felt*):
         alloc_locals
+
+        let (last_height) = storage.current_height()
 
         # Verify provided block header
         let (local header) = internal.prepare_header(data)
-        let (previous_block_header) = storage.block_header_by_height(height - 1)
-        let ctx = BlockHeaderValidationContext(height, header, previous_block_header)
+        let (previous_block_header) = storage.block_header_by_height(last_height)
+        let ctx = BlockHeaderValidationContext(last_height + 1, header, previous_block_header)
         internal.process_header(ctx)
 
         return ()

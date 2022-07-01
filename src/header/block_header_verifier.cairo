@@ -51,6 +51,6 @@ end
 @external
 func process_block{
     syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, bitwise_ptr : BitwiseBuiltin*, range_check_ptr
-}(height : felt, data_len : felt, data : felt*):
-    return BlockHeaderVerifier.process_block(height, data_len, data)
+}(data_len : felt, data : felt*):
+    return BlockHeaderVerifier.process_block(data_len, data)
 end

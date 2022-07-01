@@ -17,7 +17,7 @@ from starkware.cairo.common.uint256 import Uint256
 
 from openzeppelin.security.safemath import SafeUint256
 
-from header.model import BlockHeader, BlockHeaderValidationContext
+from header.model import BlockHeader, BlockHeaderValidationContext, assert_block_header
 from header.storage import storage
 from utils.math import clamp, min_uint256, felt_to_Uint256
 from utils.target import decode_target, encode_target
@@ -104,10 +104,5 @@ namespace internal:
 
         let (new_bits) = encode_target(new_target)
         return (bits=new_bits)
-    end
-
-    func assert_block_header{range_check_ptr}(block_header : BlockHeader):
-        assert_not_zero(block_header.version)
-        return ()
     end
 end

@@ -4,7 +4,13 @@
 
 from starkware.cairo.common.cairo_builtins import HashBuiltin
 from starkware.cairo.common.alloc import alloc
-from starkware.cairo.common.math import assert_not_zero, assert_le, split_felt, unsigned_div_rem
+from starkware.cairo.common.math import (
+    assert_not_zero,
+    assert_le,
+    split_felt,
+    unsigned_div_rem,
+    assert_nn,
+)
 from starkware.cairo.common.math_cmp import is_le, is_not_zero
 from starkware.cairo.common.bool import TRUE, FALSE
 from starkware.cairo.common.uint256 import Uint256
@@ -68,7 +74,7 @@ namespace internal:
 
         # Go back by what we want to be 14 days worth of blocks
         let height_first = last_height - (params.difficulty_adjustment_interval - 1)
-        assert_not_zero(height_first)
+        assert_le(0, height_first)
         let (first_block_header : BlockHeader) = BlockHeaderVerifier.block_header_by_height(
             height_first
         )
@@ -76,6 +82,7 @@ namespace internal:
 
         # Limit adjustment step
         let actual_timespan = last_header.timestamp - first_block_header.timestamp
+        assert_nn(actual_timespan)
         let (actual_timespan) = clamp(
             actual_timespan,
             params.pow_target_timespan_div_by_4,

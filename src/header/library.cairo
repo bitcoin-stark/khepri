@@ -183,8 +183,8 @@ namespace internal:
         bitwise_ptr : BitwiseBuiltin*,
     }(ctx : BlockHeaderValidationContext) -> (res : felt):
         # Should never encounter the genesis block
-        let (genesis_block_header : BlockHeader) = internal.genesis_block_header()
-        let (is_genesis_hash) = uint256_eq(ctx.block_header.hash, genesis_block_header.hash)
+        let (genesis : BlockHeader) = genesis_block_header()
+        let (is_genesis_hash) = uint256_eq(ctx.block_header.hash, genesis.hash)
         assert is_genesis_hash = FALSE
 
         # Should skip if block already processed
@@ -223,21 +223,22 @@ namespace internal:
     # Returns the hardcoded genesis block.
     # See https://github.com/bitcoin/bitcoin/blob/master/src/chainparams.cpp
     # and https://www.blockchain.com/btc/block/000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f
-    func genesis_block_header{range_check_ptr}(genesis_block_header : BlockHeader):
-        let (genesis_hash : Uint256) = felt_to_uint256(
+    func genesis_block_header{range_check_ptr}() -> (genesis_block_header : BlockHeader):
+        alloc_locals
+        let (local genesis_hash : Uint256) = felt_to_uint256(
             0x19d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f
         )
         let (genesis_merkle_root : Uint256) = felt_to_uint256(
             0x4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b
         )
         let genesis_block_header = BlockHeader(
-            hash=genesis_hash,
             version=1,
-            timestamp=1231006505,
-            nonce=2083236893,
-            bits=0x1d00ffff,
             prev_block=Uint256(0, 0),
             merkle_root=genesis_merkle_root,
+            timestamp=1231006505,
+            bits=0x1d00ffff,
+            nonce=2083236893,
+            hash=genesis_hash,
         )
         return (genesis_block_header)
     end

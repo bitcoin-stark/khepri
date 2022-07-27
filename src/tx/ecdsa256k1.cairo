@@ -1,8 +1,8 @@
-from starkware.cairo.common.alloc import alloc
 from starkware.cairo.common.uint256 import Uint256
+
+from starkware.cairo.common.cairo_secp.signature import get_point_from_x
 from starkware.cairo.common.cairo_secp.bigint import BigInt3, uint256_to_bigint
 from starkware.cairo.common.cairo_secp.ec import EcPoint, ec_add, ec_mul
-
 from starkware.cairo.common.cairo_secp.signature import (
     validate_signature_entry,
     get_generator_point,
@@ -13,7 +13,9 @@ from starkware.cairo.common.cairo_secp.signature import (
 # Soundness assumptions:
 # * public_key_pt is on the curve.
 # * All the limbs of public_key_pt.x, public_key_pt.y, msg_hash are in the range [0, 3 * BASE).
-func _verify_ecdsa_secp256k1{range_check_ptr}(public_key_pt : EcPoint, msg_hash : BigInt3, r : BigInt3, s : BigInt3):
+func _verify_ecdsa_secp256k1{
+    range_check_ptr
+}(public_key_pt : EcPoint, msg_hash : BigInt3, r : BigInt3, s : BigInt3):
     alloc_locals
 
     with_attr error_message("Signature out of range."):
@@ -38,18 +40,26 @@ func _verify_ecdsa_secp256k1{range_check_ptr}(public_key_pt : EcPoint, msg_hash 
     return ()
 end
 
-func verify_ecdsa_secp256k1{range_check_ptr}(
-    point_x : Uint256, point_y : Uint256, 
-    tx_hash : Uint256, 
-    sig_r : Uint256, sig_s : Uint256
-):
-    let (x : BigInt3) = uint256_to_bigint(point_x)
-    let (y : BigInt3) = uint256_to_bigint(point_y)
+func get_ecpoint_from_pubkey{
+    range_check_ptr
+}(x : Uint256, y : Uint256) -> (ec : EcPoint):
+    if (y.low-2)*(y.low-3) == 0:
+        let (x1 : BigInt3) = uint256_to_bigint(x)
+        let (ec : EcPoint) = get_point_from_x(x1, y.low)
+        return (ec=ec)
+    end
+    let (x1 : BigInt3) = uint256_to_bigint(x)
+    let (y1 : BigInt3) = uint256_to_bigint(y)
+    return (ec=EcPoint(x1, y1))
+end
+
+func verify_ecdsa_secp256k1{
+    range_check_ptr
+}(point_x : Uint256, point_y : Uint256, tx_hash : Uint256, sig_r : Uint256, sig_s : Uint256):
+    let (ec: EcPoint) = get_ecpoint_from_pubkey(point_x, point_y)
     let (r : BigInt3) = uint256_to_bigint(sig_r)
     let (s : BigInt3) = uint256_to_bigint(sig_s)
     let (z : BigInt3) = uint256_to_bigint(tx_hash)
-
-    _verify_ecdsa_secp256k1(EcPoint(x, y), z, r, s)
-
+    _verify_ecdsa_secp256k1(ec, z, r, s)
     return ()
 end

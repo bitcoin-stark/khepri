@@ -97,4 +97,29 @@ namespace test_utils:
         %}
         return (sv)
     end
+
+    func load_tx_from_json(file_name : felt) -> (tx : Uint256*, tx_len : felt, root : Uint256):
+        alloc_locals
+        local tx_root : Uint256
+        local tx : Uint256*
+        local tx_len
+        %{
+            import json
+
+            f_name_int = int(ids.file_name)
+            file_name = f_name_int.to_bytes((f_name_int.bit_length() + 7 ) // 8, 'big').decode()
+            with open(file_name, 'r') as f: j = json.load(f)
+
+            ids.tx = tx = segments.add()
+            for i, x in enumerate(j["tx"]):
+                memory[tx + i*2] = int(x[32:], 16)
+                memory[tx + i*2 + 1] = int(x[:32], 16)
+            
+            x = j["merkleroot"]
+            ids.tx_root.low = int(x[32:], 16)
+            ids.tx_root.high = int(x[:32], 16)
+            ids.tx_len = len(j["tx"])
+        %}
+        return (tx=tx, tx_len=tx_len, root=tx_root)
+    end
 end

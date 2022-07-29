@@ -1,5 +1,4 @@
 %lang starknet
-%builtins range_check
 
 from starkware.cairo.common.uint256 import Uint256
 from starkware.cairo.common.cairo_secp.ec import EcPoint

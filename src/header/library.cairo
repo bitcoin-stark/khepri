@@ -5,58 +5,30 @@
 # Starkware dependencies
 from starkware.cairo.common.cairo_builtins import HashBuiltin, BitwiseBuiltin
 from starkware.cairo.common.alloc import alloc
-from starkware.cairo.common.uint256 import Uint256, uint256_lt
+from starkware.cairo.common.uint256 import Uint256, uint256_lt, uint256_eq
 from starkware.cairo.common.bool import TRUE, FALSE
+from starkware.cairo.common.math import split_felt, assert_not_equal, assert_not_zero
+from starkware.cairo.common.math_cmp import is_not_zero
 
 from utils.common import swap_endianness_64
 from utils.sha256.sha256_contract import compute_sha256
+
 from header.model import BlockHeader, BlockHeaderValidationContext
+from header.storage import storage
 from header.rules.median_past_time import median_past_time
 from header.rules.check_pow import check_pow
 from header.rules.previous_block_hash import previous_block_hash
-
-# ------
-# STORAGE
-# ------
-@storage_var
-func block_header_hash_(block_height : felt) -> (block_header_hash : Uint256):
-end
-
-@storage_var
-func block_header_(block_header_hash : Uint256) -> (block_header : BlockHeader):
-end
+from header.rules.target import target
+from bitcoin.params import Params, get_params
 
 namespace BlockHeaderVerifier:
-    # -----
-    # VIEWS
-    # -----
-    func block_header_hash{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
-        block_height
-    ) -> (block_header_hash : Uint256):
-        let (block_header_hash) = block_header_hash_.read(block_height)
-        return (block_header_hash)
-    end
-
-    func block_header_by_hash{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
-        block_header_hash : Uint256
-    ) -> (block_header : BlockHeader):
-        let (block_header) = block_header_.read(block_header_hash)
-        return (block_header)
-    end
-
-    func block_header_by_height{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
-        block_header_height : felt
-    ) -> (block_header : BlockHeader):
-        let (block_header_hash) = block_header_hash_.read(block_header_height)
-        let (block_header) = block_header_.read(block_header_hash)
-        return (block_header)
-    end
-
     # ------
     # CONSTRUCTOR
     # ------
 
     func constructor{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}():
+        let (genesis_block_header : BlockHeader) = internal.genesis_block_header()
+        storage.unsafe_write_header(0, genesis_block_header)
         return ()
     end
 
@@ -69,18 +41,22 @@ namespace BlockHeaderVerifier:
         pedersen_ptr : HashBuiltin*,
         bitwise_ptr : BitwiseBuiltin*,
         range_check_ptr,
-    }(height : felt, data_len : felt, data : felt*):
+    }(data_len : felt, data : felt*):
         alloc_locals
 
+        let (last_height) = storage.current_height()
+
         # Verify provided block header
-        let (local header) = prepare_header(data)
-        let (previous_block_header) = block_header_by_height(height - 1)
-        let ctx = BlockHeaderValidationContext(height, header, previous_block_header)
-        process_header(ctx)
+        let (local header) = internal.prepare_header(data)
+        let (previous_block_header) = storage.block_header_by_height(last_height)
+        let ctx = BlockHeaderValidationContext(last_height + 1, header, previous_block_header)
+        internal.process_header(ctx)
 
         return ()
     end
+end
 
+namespace internal:
     # Assuming data is the header packed as an array of 4 bytes
     func prepare_header{range_check_ptr, bitwise_ptr : BitwiseBuiltin*}(data : felt*) -> (
         res : BlockHeader
@@ -135,6 +111,8 @@ namespace BlockHeaderVerifier:
         bitwise_ptr : BitwiseBuiltin*,
     }(ctx : BlockHeaderValidationContext):
         alloc_locals
+        let (local params : Params) = get_params()
+
         let (should_skip) = should_skip_checks(ctx)
         if should_skip == TRUE:
             return ()
@@ -147,6 +125,9 @@ namespace BlockHeaderVerifier:
 
         # RULE: Proof Of Work
         check_pow.assert_rule(ctx)
+
+        # RULE: Check proof of work target (bits)
+        target.assert_rule(ctx, params)
 
         # RULE: Median Past Time
         median_past_time.assert_rule(ctx)
@@ -176,13 +157,18 @@ namespace BlockHeaderVerifier:
         pedersen_ptr : HashBuiltin*,
         range_check_ptr,
         bitwise_ptr : BitwiseBuiltin*,
-    }(ctx : BlockHeaderValidationContext) -> (res : felt):
-        # Should skip if genesis block
-        # TODO: implement https://github.com/bitcoin-stark/khepri-starknet/issues/29
+    }(ctx : BlockHeaderValidationContext) -> (skip : felt):
+        # Should never encounter the genesis block
+        let (genesis : BlockHeader) = genesis_block_header()
+        let (is_genesis_hash) = uint256_eq(ctx.block_header.hash, genesis.hash)
+        assert is_genesis_hash = FALSE
 
-        # Should skip if block already processed
-        # TODO: implement https://github.com/bitcoin-stark/khepri-starknet/issues/28
-        return (FALSE)
+        # Skip if block was already processed
+        let (stored_block_header : BlockHeader) = storage.block_header_by_hash(
+            ctx.block_header.hash
+        )
+        let (is_already_stored) = is_not_zero(stored_block_header.version)
+        return (skip=is_already_stored)
     end
 
     func accept_block{
@@ -193,13 +179,40 @@ namespace BlockHeaderVerifier:
     }(ctx : BlockHeaderValidationContext):
         alloc_locals
         # Write current header to storage
-        block_header_hash_.write(ctx.height, ctx.block_header.hash)
-        block_header_.write(ctx.block_header.hash, ctx.block_header)
+        storage.write_header(ctx.height, ctx.block_header)
 
         # Consensus rules callback
         previous_block_hash.on_block_accepted(ctx)
         check_pow.on_block_accepted(ctx)
         median_past_time.on_block_accepted(ctx)
         return ()
+    end
+
+    # Returns the hardcoded genesis block.
+    # See https://github.com/bitcoin/bitcoin/blob/master/src/chainparams.cpp
+    # and https://www.blockchain.com/btc/block/000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f
+    func genesis_block_header{range_check_ptr}() -> (genesis_block_header : BlockHeader):
+        alloc_locals
+        let (local genesis_hash : Uint256) = felt_to_uint256(
+            0x19d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f
+        )
+        let (genesis_merkle_root : Uint256) = felt_to_uint256(
+            0x4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b
+        )
+        let genesis_block_header = BlockHeader(
+            version=1,
+            prev_block=Uint256(0, 0),
+            merkle_root=genesis_merkle_root,
+            timestamp=1231006505,
+            bits=0x1d00ffff,
+            nonce=2083236893,
+            hash=genesis_hash,
+        )
+        return (genesis_block_header)
+    end
+
+    func felt_to_uint256{range_check_ptr}(x) -> (res : Uint256):
+        let (hi, lo) = split_felt(x)
+        return (Uint256(lo, hi))
     end
 end

@@ -8,7 +8,7 @@ from tx.ecdsa256k1 import _verify_ecdsa_secp256k1, verify_ecdsa_secp256k1
 from tx.model import Signature, Point, SignatureVerification
 from tx.test_utils import test_utils
 
-# Verifies a secp256k1 ECDSA signature.
+# stark template
 @view
 func test_ecsda_secp256k1{
     range_check_ptr
@@ -33,39 +33,29 @@ func validate_ecdsa_secp256k1{
 end
 
 @view
-func test_ecsda_secp256k1_Tx1{
+func test_p2pkh_with_compressed_pubkey02{
     range_check_ptr
 }():
-    let (sv : SignatureVerification) = test_utils.load_ecdsa_params_from_json('./resources/tx/tx1.json')
-    validate_ecdsa_secp256k1(sv)
-    return ()
-end
-
-# the 'pizza transaction' 
-#   https://www.blockchain.com/btc/tx/cca7507897abc89628f450e8b1e0c6fca4ec3f7b34cccf55f3f531c659ff4d79
-@view
-func test_ecsda_secp256k1_Tx2{
-    range_check_ptr
-}():
-    let (sv : SignatureVerification) = test_utils.load_ecdsa_params_from_json('./resources/tx/tx2.json')
+    let (sv : SignatureVerification) = test_utils.load_p2pkh_tx_from_json('./resources/tx/p2pkh02.json')
     validate_ecdsa_secp256k1(sv)
     return ()
 end
 
 @view
-func test_ecsda_secp256k1_Tx3{
+func test_p2pkh_with_compressed_pubkey03{
     range_check_ptr
 }():
-    let (sv : SignatureVerification) = test_utils.load_ecdsa_params_from_json('./resources/tx/tx3.json')
+    let (sv : SignatureVerification) = test_utils.load_p2pkh_tx_from_json('./resources/tx/p2pkh03.json')
     validate_ecdsa_secp256k1(sv)
     return ()
 end
 
+# uncompressed pubkey
 @view
-func test_ecsda_secp256k1_Tx4{
+func test_p2pkh_with_uncompressed_pubkey04{
     range_check_ptr
 }():
-    let (sv : SignatureVerification) = test_utils.load_ecdsa_params_from_json('./resources/tx/tx4.json')
+    let (sv : SignatureVerification) = test_utils.load_p2pkh_tx_from_json('./resources/tx/p2pkh04.json')
     validate_ecdsa_secp256k1(sv)
     return ()
 end

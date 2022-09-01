@@ -15,7 +15,7 @@ namespace test_utils:
                 sha.update(unhexlify(key_hex))
                 rip.update(sha.digest())
                 return f'1976a914{rip.hexdigest()}88ac'
-            
+
             def decode_signature_script(sig):
                 s1 = sig
                 sig = s1[2:]
@@ -33,7 +33,7 @@ namespace test_utils:
                 tx_bin = unhexlify(rawtx_hex)
                 tx_hex = hashlib.sha256(hashlib.sha256(tx_bin).digest()).hexdigest()
                 return tx_hex
-            
+
             def generate_hex_vout(vout):
                 vout = [(v["scriptPubKey"]["hex"], int(v["value"]*10**8).to_bytes(8, 'little').hex()) for v in vout]
                 voutHex = ''.join(f'{v}{int(len(s)/2).to_bytes(1, "little").hex()}{s}' for (s, v) in vout)
@@ -69,7 +69,7 @@ namespace test_utils:
             # generate pubkey script
             voutIndexHex = vin["vout"].to_bytes(4, 'little').hex()
             vinHex = generate_pubkey_script(key_hex)
-            
+
             seqHex = "ffffffff"
             suffixHex = "0000000001000000"
 
@@ -102,9 +102,11 @@ namespace test_utils:
             ids.sv.digest.high = int(tx_hex[:32], 16)
         %}
         return (sv)
-    end 
-    
-    func load_merkle_tx_from_json(file_name : felt) -> (tx : Uint256*, tx_len : felt, root : Uint256):
+    end
+
+    func load_merkle_tx_from_json(file_name : felt) -> (
+        tx : Uint256*, tx_len : felt, root : Uint256
+    ):
         alloc_locals
         local tx_root : Uint256
         local tx : Uint256*
@@ -121,7 +123,7 @@ namespace test_utils:
                 memory[tx + i*2] = int(x[32:], 16)
                 memory[tx + i*2 + 1] = int(x[:32], 16)
             ids.tx_len = len(j["tx"])
-            
+
             x = j["merkleroot"]
             ids.tx_root.low = int(x[32:], 16)
             ids.tx_root.high = int(x[:32], 16)

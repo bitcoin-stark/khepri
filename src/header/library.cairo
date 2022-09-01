@@ -11,7 +11,7 @@ from starkware.cairo.common.math import split_felt, assert_not_equal, assert_not
 from starkware.cairo.common.math_cmp import is_not_zero
 
 from utils.common import swap_endianness_64
-from utils.sha256.sha256_contract import compute_sha256
+from utils.sha256.sha256 import compute_sha256
 
 from header.model import BlockHeader, BlockHeaderValidationContext
 from header.storage import storage

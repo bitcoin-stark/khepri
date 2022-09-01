@@ -4,7 +4,7 @@ from starkware.cairo.common.alloc import alloc
 func hash_chain(a : Uint256*, a_len : felt, c : Uint256*) -> (c_end : Uint256*):
     alloc_locals
 
-    if (a_len+1)*a_len == 0:
+    if (a_len + 1) * a_len == 0:
         return (c_end=c)
     end
 
@@ -15,7 +15,7 @@ func hash_chain(a : Uint256*, a_len : felt, c : Uint256*) -> (c_end : Uint256*):
     else:
         assert y = a[1]
     end
-    
+
     local z : Uint256
 
     %{
@@ -33,16 +33,16 @@ func hash_chain(a : Uint256*, a_len : felt, c : Uint256*) -> (c_end : Uint256*):
 
     assert [c] = z
 
-    return hash_chain(a+Uint256.SIZE*2, a_len-2, c+Uint256.SIZE)
+    return hash_chain(a + Uint256.SIZE * 2, a_len - 2, c + Uint256.SIZE)
 end
 
 func build_merkle_root(a : Uint256*, a_len : felt) -> (res : Uint256):
     alloc_locals
-    
+
     if a_len == 1:
         return (res=[a])
     end
-    
+
     let (local c_start : Uint256*) = alloc()
     let (c_end : Uint256*) = hash_chain(a, a_len, c_start)
     tempvar c_len = (c_end - c_start) / Uint256.SIZE

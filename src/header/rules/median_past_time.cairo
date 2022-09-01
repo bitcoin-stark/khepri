@@ -48,7 +48,7 @@ end
 namespace median_past_time:
     # This function reverts if the timestamp of the given header if lower than or equal to the median timestamp of previous 11 blocks
     func assert_rule{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
-       ctx : BlockHeaderValidationContext
+        ctx : BlockHeaderValidationContext
     ):
         alloc_locals
         let (timestamps : Timestamps) = last_11_timestamps.read()
@@ -64,7 +64,7 @@ namespace median_past_time:
 
     # This function must be called when a block is accepted so that the list of the last 11 timestamps is updated
     func on_block_accepted{syscall_ptr : felt*, pedersen_ptr : HashBuiltin*, range_check_ptr}(
-       ctx : BlockHeaderValidationContext
+        ctx : BlockHeaderValidationContext
     ):
         let (timestamps : Timestamps) = last_11_timestamps.read()
         let new_timestamps : Timestamps = Timestamps(

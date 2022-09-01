@@ -1,6 +1,6 @@
-# khepri-starknet
+# Khepri
 
-Khepri StarkNet smart contracts
+STARK-proven Stateful Bitcoin client enabling hyper fast trustless sync and checkpoints.
 
 ## Description
 
@@ -16,34 +16,20 @@ Khepri StarkNet smart contracts
 
 #### 📦 Install the requirements
 
-- [protostar 0.3.1 or above](https://docs.swmansion.com/protostar/docs/tutorials/installation)
+- [protostar 0.3.2 or above](https://docs.swmansion.com/protostar/docs/tutorials/installation)
 
 ### ⛏️ Compile
 
 ```bash
-make
+protostar build
 ```
 
 ### 🌡️ Test
 
 ```bash
-make test
+protostar test
 ```
-
-### 💋 Format code
-
-```bash
-make format
-```
-
-### 🃏 Utilities
-
-####
 
 ## 📄 License
 
-**khepri-starknet** is released under the [MIT](LICENSE).
-
-## Credits
-
-This project was inspired by the work done on https://github.com/samlaf/starknet-btc-lightclient.
+**khepri** is released under the [MIT](LICENSE).

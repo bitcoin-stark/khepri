@@ -12,13 +12,19 @@ The idea of Khepri is to leverage Stark proof system in order to solve some issu
 
 With Stark proofs and Cairo, we have the ability to verify the integrity of a computation without having to naively redo all computation. Hence a verifier can be sure of the honest execution of a program, without the need of executing it and check the result.
 
-The verification of the proof is exponentially faster than the naive execution of the program, which enable a lot of optimization on several use cases.
+The verification of the proof is exponentially faster than the naive execution of the program, which provide scalability.
 
-What can of problems can we solve with this super power ? Well, there are so many issues we could imagine to tackle with this approach, here are some cool features that could be enabled with this system:
+Moreover, the overhead of generating the proof is negligible compared to the normal execution without the generation of the proof.
+
+This mechanism can enable a lot of potential optimizations on several use cases.
+
+What kind of problems can we solve with this super power ? Well, there are so many issues we could imagine to tackle with this approach, here are some cool features that could be enabled with this system:
 
 - hyper fast & trustless synchronization (IBD)
 - enhanced Simplified Payment Verification
 - protection against DoS on the P2P layer
+
+In short, Khepri is a proof of concept to demonstrate how STARK proofs can be leveraged for Bitcoin without changing the protocol.
 
 ## Usage
 

@@ -13,7 +13,7 @@ jobs:
           cache: "pip"
       - name: Install dependencies
         run: |
-          pip install cairo-lang
+          pip install cairo-lang==0.9.1
       - name: Check files formatting
         run: cairo-format -c src/**/*.cairo
   python:

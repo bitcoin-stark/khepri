@@ -11,7 +11,7 @@ from starkware.cairo.common.math import split_felt, assert_not_equal, assert_not
 from starkware.cairo.common.math_cmp import is_not_zero
 
 from utils.common import swap_endianness_64
-from utils.sha256.sha256 import compute_sha256
+from utils.sha256 import sha256
 
 from header.model import BlockHeader, BlockHeaderValidationContext
 from header.storage import storage
@@ -87,8 +87,8 @@ namespace internal:
         let (bits) = swap_endianness_64(data[18], 4)
         let (nonce) = swap_endianness_64(data[19], 4)
 
-        let (single_sha) = compute_sha256(data, 80)
-        let (double_sha) = compute_sha256(single_sha, 32)
+        let (single_sha) = sha256(data, 80 * 8)
+        let (double_sha) = sha256(single_sha, 32 * 8)
 
         let (hash0) = swap_endianness_64(double_sha[6] * 2 ** 32 + double_sha[7], 8)
         let (hash1) = swap_endianness_64(double_sha[4] * 2 ** 32 + double_sha[5], 8)
